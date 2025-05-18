@@ -20,20 +20,7 @@ const LandingPage = () => {
             </div>
 
             {/* Navigation Buttons at the Top Right */}
-            <div className="absolute top-8 right-8 flex gap-4 z-10">
-                <button 
-                    className="px-6 py-2.5 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-lg shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-500 transform hover:scale-105 hover:shadow-orange-500/30 animate-pulse"
-                    onClick={() => handleNavigation("/login")}
-                >
-                    Login
-                </button>
-                <button 
-                    className="px-6 py-2.5 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-lg shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-500 transform hover:scale-105 hover:shadow-orange-500/30 animate-pulse"
-                    onClick={() => handleNavigation("/signup")}
-                >
-                    Sign Up
-                </button>
-            </div>
+           
 
             {/* Hero Section */}
             <div className="text-center text-white px-6 pt-32 pb-20 relative z-10 space-y-12">
@@ -45,7 +32,20 @@ const LandingPage = () => {
                         Get health insights and connect with expert doctors for professional consultations.
                     </p>
                 </div>
-
+    <div className="absolute top-8 right-8 flex gap-4 z-10">
+                <button 
+                    className="px-6 py-2.5 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-lg shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-500 transform hover:scale-105 hover:shadow-orange-500/30 animate-pulse"
+                    onClick={() => handleNavigation("/login")}
+                >
+                    Login
+                </button>
+                <button 
+                    className="px-6 py-2.5  bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-lg shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-500 transform hover:scale-105 hover:shadow-orange-500/30 animate-pulse"
+                    onClick={() => handleNavigation("/signup")}
+                >
+                    Sign Up
+                </button>
+            </div>
                 {/* Feature Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
                     <div className="bg-blue-950/70 backdrop-blur-sm p-8 rounded-xl transform hover:scale-105 transition duration-500 hover:shadow-lg hover:shadow-blue-500/20 border border-blue-800/30 animate-slide-up">
@@ -65,7 +65,7 @@ const LandingPage = () => {
                     </div>
                 </div>
             </div>
-
+           
             {/* How It Works Section */}
             <div className="text-white px-6 py-20 relative z-10 bg-blue-950/30">
                 <div className="max-w-6xl mx-auto">

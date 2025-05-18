@@ -1,48 +1,41 @@
 import dotenv from "dotenv";
-dotenv.config(); // ✅ Load environment variables
+dotenv.config();
 
 import express from "express";
 import mongoose from "mongoose";
-import cors from "cors";  // ✅ Allow frontend requests
-import authRoutes from "./routes/authRoutes.js";  // ✅ Import authentication routes
-import doctorRoutes from "./routes/doctorRoutes.js";  // ✅ Import doctor routes
+import cors from "cors";
+import authRoutes from "./routes/authRoutes.js";
+import doctorRoutes from "./routes/doctorRoutes.js";
+import patientRoutes from "./routes/patientRoutes.js";
+
 import jwt from "jsonwebtoken";
 
 const app = express();
-app.use(cors());  // ✅ Enable CORS for frontend requests
-app.use(express.json());  // ✅ Required to parse JSON requests
 
+app.use(cors());
+app.use(express.json());
 
 // Middleware to authenticate and populate req.user
-const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized. Token missing." });
-  }
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Populate req.user with decoded token data
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: "Unauthorized. Invalid token." });
-  }
-};
 
-// Apply authentication middleware globally or to specific routes
-app.use(authenticate); // Apply globally (optional)
 
-// ✅ Register auth routes
+// Public routes (no token needed)
 app.use("/api/auth", authRoutes);
+app.use("/api/patient", patientRoutes);
+app.use("/api/appointments" , patientRoutes);
 
-// ✅ Register doctor routes
+// Protected routes (token required)
+// Doctor routes (auth handled inside doctorRoutes.js)
 app.use("/api/doctors", doctorRoutes);
 
-
-mongoose.connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err));
+mongoose
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => console.log(`✅ Server running on http://localhost:${PORT}`));
+app.listen(PORT, "0.0.0.0", () =>
+  console.log(`✅ Server running on http://localhost:${PORT}`)
+);

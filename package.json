@@ -14,13 +14,18 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.6",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "framer-motion": "^12.12.1",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.511.0",
     "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.2",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemon": "^3.0.1",
-    "react-router-dom": "^7.4.0",
+    "react-router-dom": "^7.6.0",
     "swiper": "^11.2.1"
   },
   "devDependencies": {

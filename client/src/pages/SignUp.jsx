@@ -9,19 +9,23 @@ const Signup = () => {
     const [role, setRole] = useState("patient");
     const [error, setError] = useState("");
     const navigate = useNavigate();
+const handleSignup = async (e) => {
+    e.preventDefault();
+    setError("");
 
-    const handleSignup = async (e) => {
-        e.preventDefault();
-        setError("");
-
-        try {
-            await axios.post("http://localhost:5000/api/auth/signup", { name, email, password, role });
-            navigate("/login");
-        } catch (error) {
-            console.error("Signup Error:", error);
-            setError(error.response?.data?.error || "Signup failed. Try again.");
-        }
-    };
+    try {
+        await axios.post("http://localhost:5000/api/auth/signup", {
+            name,
+            email,
+            password,
+            role: role.toLowerCase(), // 🛠️ Ensure it's valid
+        });
+        navigate("/login");
+    } catch (error) {
+        console.error("Signup Error:", error);
+        setError(error.response?.data?.error || "Signup failed. Try again.");
+    }
+};
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-900 via-black to-blue-900 p-4">
