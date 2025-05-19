@@ -7,5 +7,6 @@ const router = express.Router();
 // Patient books appointment with a doctor
 router.post("/book-appointment/:doctorId",authenticate,bookAppointment);
 router.get("/getmyappointments" , authenticate ,getMyAppointments);
+router.post("/post-history/:patientId",authenticate,postHistory);
 
 export default router;
