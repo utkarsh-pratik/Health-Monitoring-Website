@@ -40,25 +40,30 @@ export const bookAppointment = async (req, res) => {
 //nst Appointment = require('../models/Doctor'); // or wherever you have doctor model
 
 // Get patient’s appointments
+
+
 export const getMyAppointments = async (req, res) => {
   try {
-    const patientId = req.user.id; // from JWT middleware
+    const patientId = req.user._id; // user from JWT token
 
-    // Find all doctors where patient has an appointment
-    const doctors = await AppointMent.find({
-      'appointments.patientId': patientId,
-    }).select('name appointments');
+    // Step 1: Find all doctors where this user has appointments
+    const doctors = await Doctor.find({
+      'appointments.patientRef': patientId,
+    }).select('name specialty appointments');
 
-    // Collect patient appointments from doctors
     const patientAppointments = [];
 
+    // Step 2: Extract only this patient's appointments from each doctor
     doctors.forEach((doctor) => {
       doctor.appointments.forEach((appt) => {
-        if (appt.patientId.toString() === patientId) {
+        if (appt.patientRef && appt.patientRef.toString() === patientId.toString()) {
           patientAppointments.push({
             doctorName: doctor.name,
+            doctorSpecialty: doctor.specialty,
             appointmentId: appt._id,
-            date: appt.date,
+            patientName: appt.patientName,
+            contact: appt.patientContact,
+            date: appt.appointmentTime,
             reason: appt.reason,
             status: appt.status,
           });
@@ -66,10 +71,9 @@ export const getMyAppointments = async (req, res) => {
       });
     });
 
-    res.json(patientAppointments);
+    res.status(200).json(patientAppointments);
   } catch (error) {
+    console.error('Error fetching appointments:', error);
     res.status(500).json({ message: 'Server error fetching appointments' });
   }
 };
-
-
