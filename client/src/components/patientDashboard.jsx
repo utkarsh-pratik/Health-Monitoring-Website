@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+ // ✅ Required to use navigate()
+
 
 const questions = [
   "Do you have any allergies?",
   "Are you currently taking any medications (if any, write below)?",
   "Do you have any chronic illnesses?",
-  "Have you had any surgeries before?"
+  "Have you had any surgeries before?",
+  "Do you have a family history of any diseases?",
+  "Type 'I will comeback stronger!!'"
 ];
 
 const PatientDashboard = () => {
+    const navigate = useNavigate(); // ✅ This is correct placement
   const [answers, setAnswers] = useState({});
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [input, setInput] = useState("");
   const [animate, setAnimate] = useState(false);
+     
 
   useEffect(() => {
     setAnimate(true);
@@ -30,7 +38,7 @@ const PatientDashboard = () => {
 
     setInput("");
 
-    if (currentQIndex < questions.length - 1) {
+    if (currentQIndex < questions.length - 1){
       setCurrentQIndex(currentQIndex + 1);
     } else {
       saveMedicalHistory();
@@ -41,7 +49,7 @@ const PatientDashboard = () => {
 const saveMedicalHistory = async () => {
   try {
     const token = localStorage.getItem("token");
-    const response = await axios.post("/api/patient/post-history",
+    const response = await axios.post("http://localhost:5000/api/patient/post-history",
       { answers },
       {
         headers: {
@@ -50,10 +58,12 @@ const saveMedicalHistory = async () => {
         },
       }
     );
-
+    navigate("/patient/home");
     alert("Medical history saved! Thank you.");
     setCurrentQIndex(0);
     setAnswers({});
+   
+
   } catch (err) {
     console.error("Error saving medical history:", err);
     alert("An error occurred while saving your data.");
@@ -63,7 +73,8 @@ const saveMedicalHistory = async () => {
   const progressPercent = ((currentQIndex + 1) / questions.length) * 100;
 
   return (
-    <div className="max-w-md mx-auto mt-32 p-8 bg-gradient-to-br from-purple-200 via-pink-300 to-red-200 rounded-3xl shadow-2xl dark:from-gray-800 dark:via-gray-900 dark:to-black">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600   via-purple-400 to-blue-900 flex items-center justify-center p-4">
+    <div className="max-w-md mx-auto mt-32 p-8 bg-gradient-to-br from-purple-400  via-pink-300 to-red-200 rounded-3xl shadow-2xl dark:from-gray-800 dark:via-gray-900 dark:to-black">
       <h2 className="text-3xl font-extrabold mb-6 text-center text-purple-800 dark:text-pink-400 drop-shadow-md">
         Medical History Chatbot
       </h2>
@@ -116,6 +127,7 @@ const saveMedicalHistory = async () => {
           {currentQIndex < questions.length - 1 ? "Next" : "Submit"}
         </button>
       </div>
+    </div>
     </div>
   );
 };

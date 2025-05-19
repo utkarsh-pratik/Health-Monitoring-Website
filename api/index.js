@@ -7,6 +7,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
+import reminderScheduler from "./reminderScheduler.js"; // Import the reminder scheduler
 
 import jwt from "jsonwebtoken";
 
@@ -32,7 +33,10 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB Connected"))
+  .then(() => {
+    console.log('✅ MongoDB Connected');
+    reminderScheduler(); // start the cron reminders after DB is connected
+  })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 const PORT = process.env.PORT || 5000;

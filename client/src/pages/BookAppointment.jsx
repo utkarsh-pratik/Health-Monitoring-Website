@@ -34,41 +34,49 @@ const BookAppointment = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-8">
-      <h1 className="text-4xl font-extrabold text-center mb-10 text-purple-700 drop-shadow-lg">
-        Available Doctors
-      </h1>
+    <div className="min-h-screen bg-gradient-to-br py-16 from-blue-950 to-purple-800 p-8">
+      {/* Title */}
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-extrabold text-white drop-shadow-2xl bg-purple-900/30 px-6 py-4 rounded-2xl inline-block backdrop-blur-md">
+          Available Doctors
+        </h1>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {doctors.map((doc) => (
-          <div
-            key={doc._id}
-            onClick={() => setSelectedDoctor(doc)}
-            className="cursor-pointer bg-white rounded-3xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-transform duration-300 border border-purple-300"
-          >
-            <img
-              src={doc.imageUrl}
-              alt={doc.name}
-              className="rounded-t-3xl h-56 w-full object-cover"
-            />
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold text-purple-800">{doc.name}</h2>
-              <p className="text-sm text-purple-600 italic">{doc.specialty}</p>
-              <p className="mt-2 font-semibold text-purple-700">
-                Consultation Fee: ₹{doc.consultationFees}
-              </p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedDoctor(doc);
-                }}
-                className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-lg transition"
-              >
-                Book Now
-              </button>
+      {/* Doctor Cards Grid */}
+      <div className="grid grid-cols-1 py-0 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {doctors.length === 0 ? (
+          <p className="text-center text-white col-span-full">No available doctors at the moment.</p>
+        ) : (
+          doctors.map((doc) => (
+            <div
+              key={doc._id}
+              onClick={() => setSelectedDoctor(doc)}
+              className="cursor-pointer bg-white rounded-3xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-transform duration-300 border border-purple-300"
+            >
+              <img
+                src={doc.imageUrl}
+                alt={doc.name}
+                className="rounded-t-3xl h-56 w-full object-cover"
+              />
+              <div className="p-6">
+                <h2 className="text-2xl font-semibold text-purple-800">{doc.name}</h2>
+                <p className="text-sm text-purple-600 italic">{doc.specialty}</p>
+                <p className="mt-2 font-semibold text-purple-700">
+                  Consultation Fee: ₹{doc.consultationFees}
+                </p>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDoctor(doc);
+                  }}
+                  className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-lg transition"
+                >
+                  Book Now
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Fullscreen Modal Form */}
@@ -96,7 +104,7 @@ const BookAppointment = () => {
               />
               <input
                 type="text"
-                placeholder="Contact Number"
+                placeholder="Email"
                 value={form.patientContact}
                 onChange={(e) => setForm({ ...form, patientContact: e.target.value })}
                 className="w-full border border-purple-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -127,6 +135,7 @@ const BookAppointment = () => {
         </div>
       )}
 
+      {/* Animation Styles */}
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-20px); }

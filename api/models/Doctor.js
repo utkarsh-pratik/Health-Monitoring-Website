@@ -1,38 +1,21 @@
 import mongoose from 'mongoose';
 
 const appointmentSchema = new mongoose.Schema({
-  patientName: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  patientContact: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  appointmentTime: {
-    type: Date,
-    required: true,
-  },
-  reason: {
-    type: String,
-    trim: true,
-  },
+  patientName: { type: String, required: true, trim: true },
+  patientContact: { type: String, required: true, trim: true },
+  appointmentTime: { type: Date, required: true },
+  reason: { type: String, trim: true },
   status: {
     type: String,
     enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],
     default: 'Pending',
   },
-  patientRef: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // <-- Links the appointment to the patient user
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  patientRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  notifiedTwentyFourHours: { type: Boolean, default: false },
+  notifiedOneHour: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
 });
+
 
 const timeSlotSchema = new mongoose.Schema({
   day: {
