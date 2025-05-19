@@ -1,6 +1,7 @@
 import Doctor from "../models/Doctor.js";
+import Patient from "../models/Patient.js"; // Assuming you have a Patient model
 //port AppointMent from "../models/Appointment.js"; // Assuming you have an Appointment model
-
+import User from '../models/User.js';
 
 // controllers/appointmentController.js
 // POST /api/patient/book-appointment/:doctorId
@@ -75,5 +76,57 @@ export const getMyAppointments = async (req, res) => {
   } catch (error) {
     console.error('Error fetching appointments:', error);
     res.status(500).json({ message: 'Server error fetching appointments' });
+  }
+};
+
+
+
+
+
+
+export const postHistory = async (req, res) => {
+  const { answers } = req.body;
+  const patientId = req.user._id;
+
+  console.log("Patient ID:", patientId);
+  console.log("Answers:", answers);
+
+  try {
+    // Format answers into array of { question, answer }
+    const formattedHistory = Object.entries(answers).map(([question, answer]) => ({
+      question,
+      answer,
+    }));
+
+    // Try to find existing patient
+    let patient = await Patient.findById(patientId);
+
+    if (!patient) {
+      // If patient doesn't exist, fetch from User
+      const user = await User.findById(patientId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      // Create new Patient entry
+      patient = new Patient({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        contact: user.contact,
+        medicalHistory: formattedHistory,
+      });
+
+      console.log("🆕 Created new patient record.");
+    } else {
+      // If exists, update medical history
+      patient.medicalHistory = formattedHistory;
+      console.log("✏️ Updated existing patient record.");
+    }
+
+    await patient.save();
+    res.status(200).json({ message: "Medical history saved successfully." });
+
+  } catch (error) {
+    console.error("❌ Save error:", error);
+    res.status(500).json({ error: "Failed to save medical history." });
   }
 };
