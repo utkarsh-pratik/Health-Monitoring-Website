@@ -3,7 +3,12 @@ import {
   setAvailability,
   getAvailableDoctors,
   createDoctorListing,
-getScheduledAppointments
+getScheduledAppointments,
+  getPatientHistory,
+  //tCreateDoctorListing//nt this for /create-listing
+  //tGetAvailableDoctors//nt this for /available
+  //tGetPatientHistory//nt this for /patient-history/:patientId
+
 
  //tScheduledAppointments//nt this for /scheduled-appointments
   //tAvailableDoctors//nt this for /availability/:doctorId
@@ -26,6 +31,6 @@ router.post("/create-listing", authenticate, verifyDoctor, parser.single('image'
 router.get("/available", getAvailableDoctors);
   
 router.get("/scheduled-appointments",authenticate,verifyDoctor,getScheduledAppointments);
-//uter.get('/patient-history/:patientId', authenticate, getPatientHistory);
+router.get('/patient-history/:patientId', authenticate, getPatientHistory);
 
 export default router;

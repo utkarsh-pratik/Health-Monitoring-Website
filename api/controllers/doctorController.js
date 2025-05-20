@@ -120,4 +120,19 @@ export const getScheduledAppointments = async (req, res) => {
 
 
 // GET /api/doctors/patient-history/:patientId
+export const getPatientHistory = async (req, res) => {
+  try {
+    const { patientId } = req.params;
 
+    const patient = await Patient.findById(patientId);
+
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    res.status(200).json({ history: patient.medicalHistory || [] });
+  } catch (error) {
+    console.error("Error fetching patient history:", error);
+    res.status(500).json({ message: "Server error while fetching history" });
+  }
+};

@@ -68,77 +68,81 @@ const ScheduledAppointment = () => {
   }
 
   return (
-    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {appointments.map((appt, index) => (
-        <div
-          key={index}
-          className="bg-white border border-gray-200 shadow-lg rounded-2xl p-6 transition-transform duration-300 hover:scale-[1.02] hover:shadow-xl flex flex-col justify-between"
-        >
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <FaUserAlt className="text-blue-500" />
-              <h2 className="text-xl font-bold text-gray-800">{appt.patientName}</h2>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-gray-500 mb-1">
-              <FaPhoneAlt />
-              <span>{appt.patientContact}</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-gray-700 mt-3">
-              <FaInfoCircle />
-              <span>
-                <strong>Reason:</strong> {appt.reason || 'N/A'}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-gray-700 mt-1">
-              <FaClock />
-              <span>
-                <strong>Time:</strong>{' '}
-                {moment(appt.appointmentTime).format('MMMM Do YYYY, h:mm A')}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-gray-700 mt-1">
-              <FaCalendarCheck />
-              <span>
-                <strong>Created:</strong>{' '}
-                {moment(appt.createdAt).format('DD/MM/YYYY')}
-              </span>
-            </div>
-            <div className="mt-4">
+    <div className="min-h-screen p-6 bg-gradient-to-br from-[#667eea] via-[#764ba2] to-[#6b8dd6] bg-fixed animate-gradient-xy">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {appointments.map((appt, index) => (
+          <div
+            key={index}
+            className="relative bg-white/30 backdrop-blur-md border border-white/10 shadow-2xl rounded-3xl p-6 hover:scale-[1.02] transition-transform duration-300 hover:shadow-indigo-300"
+          >
+            {/* Status Badge - Top Right */}
+            <div className="absolute top-20  right-12 z-10">
               <span
-                className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusBadge(appt.status)}`}
+                className={`inline-block px-3 py-1 rounded-full text-sm font-semibold shadow-md ${statusBadge(appt.status)}`}
               >
                 {appt.status}
               </span>
             </div>
-          </div>
 
-          <div className="mt-6 text-right">
-            <Link
-              to={`/doctor/patient-history/${appt.patientRef?._id || 'unknown'}`}
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-full shadow-md transition duration-300 ease-in-out"
-            >
-              <FaInfoCircle className="text-white" />
-              Past History
-            </Link>
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-center rounded-xl py-2 mb-4 shadow-md">
+              <h2 className="text-xl font-bold flex items-center justify-center gap-2">
+                <FaUserAlt />
+                {appt.patientName}
+              </h2>
+            </div>
+
+            <div className="space-y-2 text-black">
+              <InfoRow icon={<FaPhoneAlt />} label="Phone" value={appt.patientContact} />
+              <InfoRow icon={<FaInfoCircle />} label="Reason" value={appt.reason || 'N/A'} />
+              <InfoRow
+                icon={<FaClock />}
+                label="Time"
+                value={moment(appt.appointmentTime).format('MMMM Do YYYY, h:mm A')}
+              />
+              <InfoRow
+                icon={<FaCalendarCheck />}
+                label="Created"
+                value={moment(appt.createdAt).format('DD/MM/YYYY')}
+              />
+            </div>
+
+            <div className="mt-6 text-right">
+              <Link
+                to={`/doctor/patienthistory/${appt.patientRef?._id || 'unknown'}`}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold px-4 py-2 rounded-full shadow-lg transition-all duration-300"
+              >
+                <FaInfoCircle />
+                View History
+              </Link>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
 
+const InfoRow = ({ icon, label, value }) => (
+  <div className="flex items-center gap-3 text-sm">
+    <span className="text-white">{icon}</span>
+    <span>
+      <strong>{label}:</strong> {value}
+    </span>
+  </div>
+);
+
 const statusBadge = (status) => {
   switch (status) {
     case 'Pending':
-      return 'bg-yellow-100 text-yellow-700';
+      return 'bg-yellow-300 text-yellow-900';
     case 'Confirmed':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-300 text-green-900';
     case 'Cancelled':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-300 text-red-900';
     case 'Completed':
-      return 'bg-blue-100 text-blue-700';
+      return 'bg-blue-300 text-blue-900';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-300 text-gray-900';
   }
 };
 

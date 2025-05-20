@@ -17,6 +17,8 @@ import PatientLayout from "./layouts/PatientLayout";
 import UpcomingAppointments from "./pages/UpcomingAppointments";
 import PatientDashboard from "./components/patientDashboard";
 import ScheduledAppointment from "./pages/scheduledAppointments";
+import PatientHistory from "./pages/PatientHistory";
+import { useState, useEffect } from "react";
 
 
 const AppRoutes = () => {
@@ -42,7 +44,9 @@ const AppRoutes = () => {
       <Route path="/doctor" element={<DoctorLayout />}>
         <Route path="home" element={<DoctorHome />} />
         <Route path="profile" element={<DoctorProfile doctorId="doctor123" />} />
-        <Route path="scheduled-appointments" element={<ScheduledAppointment />}/>         
+        <Route path="scheduled-appointments" element={<ScheduledAppointment />}/>  
+        <Route path="/doctor/patienthistory/:id" element={<PatientHistory />} />
+       
         <Route path="set-availability" element={<ProfileSettings />} />
 
         
