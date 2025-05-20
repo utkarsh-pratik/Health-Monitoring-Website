@@ -3,10 +3,14 @@ import {
   setAvailability,
   getAvailableDoctors,
   createDoctorListing,
+getScheduledAppointments
+
+ //tScheduledAppointments//nt this for /scheduled-appointments
   //tAvailableDoctors//nt this for /availability/:doctorId
 } from "../controllers/doctorController.js";
 import { verifyDoctor, authenticate } from "../middlewares/authMiddleware.js";
 import parser from "../middlewares/multerCloudinary.js";
+
 
 const router = express.Router();
 
@@ -20,5 +24,8 @@ router.post("/create-listing", authenticate, verifyDoctor, parser.single('image'
 
 // Route to get all currently available doctors based on current server time
 router.get("/available", getAvailableDoctors);
+  
+router.get("/scheduled-appointments",authenticate,verifyDoctor,getScheduledAppointments);
+//uter.get('/patient-history/:patientId', authenticate, getPatientHistory);
 
 export default router;

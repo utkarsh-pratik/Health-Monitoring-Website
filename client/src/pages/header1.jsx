@@ -16,7 +16,7 @@ const PatientHome = () => {
         <div className="hidden md:flex space-x-8 font-medium text-gray-300">
   <Link to="/patient/home" className="hover:text-white transition duration-200">Home</Link>
   <Link to="/patient/appointments" className="hover:text-white transition duration-200">Book Appointment</Link>
-  <Link to="/profile" className="hover:text-white transition duration-200">Profile</Link>
+  <Link to="/patient/home" className="hover:text-white transition duration-200">Profile</Link>
   <Link to="/patient/appointments/upcoming" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition">
     Booked Appointments
   </Link>

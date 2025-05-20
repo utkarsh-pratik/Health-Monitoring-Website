@@ -16,6 +16,8 @@ import DoctorLayout from "./layouts/DoctorLayout";
 import PatientLayout from "./layouts/PatientLayout";
 import UpcomingAppointments from "./pages/UpcomingAppointments";
 import PatientDashboard from "./components/patientDashboard";
+import ScheduledAppointment from "./pages/scheduledAppointments";
+
 
 const AppRoutes = () => {
   const role = localStorage.getItem("role"); // "doctor" or "patient"
@@ -40,7 +42,9 @@ const AppRoutes = () => {
       <Route path="/doctor" element={<DoctorLayout />}>
         <Route path="home" element={<DoctorHome />} />
         <Route path="profile" element={<DoctorProfile doctorId="doctor123" />} />
+        <Route path="scheduled-appointments" element={<ScheduledAppointment />}/>         
         <Route path="set-availability" element={<ProfileSettings />} />
+
         
 
         <Route path="about" element={<About />} />

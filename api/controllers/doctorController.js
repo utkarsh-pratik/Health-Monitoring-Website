@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Doctor from "../models/Doctor.js"; // Adjust path as needed
+import Patient from "../models/Patient.js"; // Adjust path as needed
 
 
 export const setAvailability = async (req, res) => {
@@ -91,4 +92,32 @@ export const createDoctorListing = async (req, res) => {
 };
 
 // doctorController.js
+
+
+
+export const getScheduledAppointments = async (req, res) => {
+  try {
+    const userId = req.user._id; // This is the user ID from token
+
+    // Find doctor by userRef (user ID)
+    const doctor = await Doctor.findOne({ userRef: userId }).populate({
+      path: 'appointments.patientRef',
+      select: '-password -__v',
+    });
+
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+
+    res.status(200).json({ appointments: doctor.appointments });
+  } catch (error) {
+    console.error('Error fetching scheduled appointments:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
+// GET /api/doctors/patient-history/:patientId
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../components/ProfileDropdown';
+import { Link } from 'react-router-dom';
 
 const DoctorHome = () => {
     const navigate = useNavigate();
@@ -29,12 +30,12 @@ const DoctorHome = () => {
                         >
                             Home
                         </a>
-                        <a
-                            href="#"
-                            className="text-white hover:bg-blue-800/50 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                        >
+                        <Link to="/doctor/scheduled-appointments"
+                         className="text-white hover:bg-blue-800/50 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
                             Scheduled Appointments
-                        </a>
+                        </Link>
+                          
+                        
                         <a
                             href="#"
                             className="text-white hover:bg-blue-800/50 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
