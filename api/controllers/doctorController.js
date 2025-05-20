@@ -136,3 +136,64 @@ export const getPatientHistory = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching history" });
   }
 };
+
+
+
+// Update appointment status (Accept / Cancel)
+// ✅ UPDATED: Update appointment status (Accept / Cancel)
+export const updateAppointmentStatus = async (req, res) => {
+  try {
+    const doctorId = req.user._id;
+    const { apptId } = req.params;
+    const { status } = req.body;
+
+    if (!['Confirmed', 'Cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const doctor = await Doctor.findOne({ userRef: doctorId });
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+
+    const appointment = doctor.appointments.id(apptId);
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+    appointment.status = status;
+    doctor.markModified("appointments"); // ✅ Ensure subdoc updates are saved
+    await doctor.save();
+
+    res.json({ message: 'Appointment status updated', appointment });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ✅ UPDATED: Reschedule appointment
+export const rescheduleAppointment = async (req, res) => {
+  try {
+    const doctorId = req.user._id;
+    const { apptId } = req.params;
+    const { newTime } = req.body;
+
+    if (!newTime) return res.status(400).json({ message: 'New time is required' });
+
+    const newDate = new Date(newTime);
+    if (isNaN(newDate)) return res.status(400).json({ message: 'Invalid date format' });
+
+    const doctor = await Doctor.findOne({ userRef: doctorId });
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+
+    const appointment = doctor.appointments.id(apptId);
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+    appointment.appointmentTime = newDate;
+    appointment.status = 'Pending'; // Optional: 'Rescheduled'
+    doctor.markModified("appointments"); // ✅ This is crucial
+    await doctor.save();
+
+    res.json({ message: 'Appointment rescheduled', appointment });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
