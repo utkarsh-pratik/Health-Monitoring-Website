@@ -100,7 +100,9 @@ const ScheduledAppointment = () => {
     const token = localStorage.getItem("token");
     await axios.patch(
       `http://localhost:5000/api/doctors/appointments/${id}/status`,
-      { status: "Cancelled" }, // Send status explicitly
+      { status: "Cancelled",
+        reason: cancelReason
+       }, // Send status explicitly
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -120,48 +122,48 @@ const ScheduledAppointment = () => {
 
 
   // Open reschedule modal
-  const openReschedule = (appt) => {
-    setRescheduleId(appt._id);
-    setNewDate(new Date(appt.appointmentTime));
-  };
+  // const openReschedule = (appt) => {
+  //   setRescheduleId(appt._id);
+  //   setNewDate(new Date(appt.appointmentTime));
+  // };
 
   // Confirm reschedule
-  const confirmReschedule = async () => {
-    if (!newDate || newDate < new Date()) {
-      alert("Please select a valid future date and time");
-      return;
-    }
-    setLoading(rescheduleId, true);
-    try {
-      const token = localStorage.getItem("token");
-      await axios.patch(
-        `http://localhost:5000/api/doctors/appointments/${rescheduleId}/reschedule`,
-        { newTime: newDate.toISOString() },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setAppointments((prev) =>
-        prev.map((appt) =>
-          appt._id === rescheduleId
-            ? { ...appt, appointmentTime: newDate.toISOString(), status: "Pending" }
-            : appt
-        )
-      );
-      setRescheduleId(null);
-    } catch {
-      alert("Failed to reschedule appointment");
-    }
-    setLoading(rescheduleId, false);
-  };
+  // const confirmReschedule = async () => {
+  //   if (!newDate || newDate < new Date()) {
+  //     alert("Please select a valid future date and time");
+  //     return;
+  //   }
+  //   setLoading(rescheduleId, true);
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await axios.patch(
+  //       `http://localhost:5000/api/doctors/appointments/${rescheduleId}/reschedule`,
+  //       { newTime: newDate.toISOString() },
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+  //     setAppointments((prev) =>
+  //       prev.map((appt) =>
+  //         appt._id === rescheduleId
+  //           ? { ...appt, appointmentTime: newDate.toISOString(), status: "Pending" }
+  //           : appt
+  //       )
+  //     );
+  //     setRescheduleId(null);
+  //   } catch {
+  //     alert("Failed to reschedule appointment");
+  //   }
+  //   setLoading(rescheduleId, false);
+  // };
 
-  if (error) {
-    return (
-      <div className="p-8 text-center text-red-600 font-semibold text-lg bg-red-100 rounded-lg shadow-md">
-        {error}
-      </div>
-    );
-  }
+  // if () {
+  //   return (
+  //     <div className="p-8 text-center text-red-600 font-semibold text-lg bg-red-100 rounded-lg shadow-md">
+  //       {error}
+  //     </div>
+  //   );
+  // }
 
   if (appointments.length === 0) {
     return (
@@ -198,19 +200,28 @@ const ScheduledAppointment = () => {
             </div>
 
             <div className="space-y-2 text-black">
-              <InfoRow icon={<FaPhoneAlt />} label="Phone" value={appt.patientContact} />
-              <InfoRow icon={<FaInfoCircle />} label="Reason" value={appt.reason || "N/A"} />
-              <InfoRow
-                icon={<FaClock />}
-                label="Time"
-                value={moment(appt.appointmentTime).format("MMMM Do YYYY, h:mm A")}
-              />
-              <InfoRow
-                icon={<FaCalendarCheck />}
-                label="Created"
-                value={moment(appt.createdAt).format("DD/MM/YYYY")}
-              />
-            </div>
+  <InfoRow icon={<FaPhoneAlt />} label="Phone" value={appt.patientContact} />
+  <InfoRow icon={<FaInfoCircle />} label="Reason" value={appt.reason || "N/A"} />
+  <InfoRow
+    icon={<FaClock />}
+    label="Time"
+    value={
+      appt.appointmentTime && moment(appt.appointmentTime).isValid()
+        ? moment(appt.appointmentTime).format("MMMM Do YYYY, h:mm A")
+        : "N/A"
+    }
+  />
+  <InfoRow
+    icon={<FaCalendarCheck />}
+    label="Created"
+    value={
+      appt.createdAt && moment(appt.createdAt).isValid()
+        ? moment(appt.createdAt).format("DD/MM/YYYY")
+        : "N/A"
+    }
+  />
+</div>
+
 
             <div className="mt-6 text-right">
               <Link
@@ -233,13 +244,13 @@ const ScheduledAppointment = () => {
                   Accept
                 </button>
 
-                <button
+                {/* <button
                   disabled={loadingIds.includes(appt._id)}
                   onClick={() => openReschedule(appt)}
                   className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg shadow-md transition"
                 >
                   Reschedule
-                </button>
+                </button> */}
 
                 <textarea
                   placeholder="Cancellation reason (required)"

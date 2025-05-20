@@ -5,8 +5,8 @@ import {
   createDoctorListing,
 getScheduledAppointments,
   getPatientHistory,
-  updateAppointmentStatus,
-  rescheduleAppointment
+  updateAppointmentStatus
+  
   //tCreateDoctorListing//nt this for /create-listing
   //tGetAvailableDoctors//nt this for /available
   //tGetPatientHistory//nt this for /patient-history/:patientId
@@ -35,7 +35,6 @@ router.get("/available", getAvailableDoctors);
 router.get("/scheduled-appointments",authenticate,verifyDoctor,getScheduledAppointments);
 router.get('/patient-history/:patientId', authenticate, getPatientHistory);
 router.patch('/appointments/:apptId/status', authenticate, updateAppointmentStatus);
-router.patch('/appointments/:apptId/reschedule', authenticate, rescheduleAppointment);
 
 
 export default router;
