@@ -32,16 +32,43 @@ export const getAvailableDoctors = async (req, res) => {
     .toString()
     .padStart(2, "0")}`;
 
+  // Extract filters from query
+  const { day, name, specialty, minFee, maxFee } = req.query;
+
   try {
     const doctors = await Doctor.find();
 
     const availableDoctors = doctors.filter((doctor) => {
-      const today = doctor.availability.find((d) => d.day === currentDay);
-      if (!today) return false;
+      // Filter by day (query param or current day)
+      const targetDay = day || currentDay;
+      const availabilityForDay = doctor.availability.find((d) => d.day === targetDay);
+      if (!availabilityForDay) return false;
 
-      return today.slots.some((slot) => {
+      // Check availability in time slots for targetDay
+      const isAvailableNow = availabilityForDay.slots.some((slot) => {
         return currentTime >= slot.start && currentTime <= slot.end;
       });
+      if (!isAvailableNow) return false;
+
+      // Filter by name if provided (case-insensitive)
+      if (name && !doctor.name.toLowerCase().includes(name.toLowerCase())) {
+        return false;
+      }
+
+      // Filter by specialty if provided (case-insensitive)
+      if (specialty && !doctor.specialty.toLowerCase().includes(specialty.toLowerCase())) {
+        return false;
+      }
+
+      // Filter by consultation fees if provided (range)
+      if (minFee && Number(doctor.consultationFees) < Number(minFee)) {
+        return false;
+      }
+      if (maxFee && Number(doctor.consultationFees) > Number(maxFee)) {
+        return false;
+      }
+
+      return true;
     });
 
     res.status(200).json(availableDoctors);
