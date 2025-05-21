@@ -145,26 +145,40 @@ export const updateAppointmentStatus = async (req, res) => {
   try {
     const doctorId = req.user._id;
     const { apptId } = req.params;
-    const { status } = req.body;
+    const { reason, status } = req.body;
 
+    // ✅ Validate status value
     if (!['Confirmed', 'Cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
+    // ✅ Find the doctor
     const doctor = await Doctor.findOne({ userRef: doctorId });
     if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
 
+    // ✅ Find the embedded appointment
     const appointment = doctor.appointments.id(apptId);
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
+    // ✅ Update fields
     appointment.status = status;
-    doctor.markModified("appointments"); // ✅ Ensure subdoc updates are saved
+    appointment.rejectionReason = reason || '';
+    appointment.updatedAt = new Date();
+
+    doctor.markModified('appointments');
     await doctor.save();
 
-    res.json({ message: 'Appointment status updated', appointment });
+    // ✅ Re-fetch updated doctor and appointment from DB
+    const updatedDoctor = await Doctor.findOne({ userRef: doctorId });
+    const updatedAppointment = updatedDoctor.appointments.id(apptId);
+
+    // ✅ Send updated appointment
+    res.json({
+      message: 'Appointment status updated successfully',
+      appointment: updatedAppointment,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Update Error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-

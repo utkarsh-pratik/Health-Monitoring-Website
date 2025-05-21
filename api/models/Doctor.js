@@ -10,6 +10,10 @@ const appointmentSchema = new mongoose.Schema({
     enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],
     default: 'Pending',
   },
+  rejectionReason: { 
+    type: String,
+     trim: true, 
+     default: '' }, // NEW FIELD
   patientRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   notifiedTwentyFourHours: { type: Boolean, default: false },
   notifiedOneHour: { type: Boolean, default: false },
