@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const UpcomingAppointments = () => {
   const [appointments, setAppointments] = useState([]);
+  const [scrollY, setScrollY] = useState(0); // Track scroll position
   const token = localStorage.getItem('token');
 
   const fetchAppointments = async () => {
@@ -21,30 +22,43 @@ const UpcomingAppointments = () => {
 
   useEffect(() => {
     fetchAppointments();
+
+    // Add event listener to track scrolling
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-cyan-600 via-blue-500 to-purple-600 flex flex-col items-center px-6 pt-16 pb-8 relative">
-      {/* Heading fixed near top, centered */}
-      <h1 className="text-4xl font-extrabold mt-4 mb-6 text-center text-yellow-300 drop-shadow-lg tracking-wide max-w-4xl w-full">
+    <div
+      className="min-h-screen flex flex-col bg-gradient-to-b from-purple-950 via-black to-violet-950 items-center px-6 pt-16 pb-8 relative transition-all duration-300"
+    >
+      {/* Heading */}
+      <h1 className="text-4xl font-extrabold mt-4 mb-8 text-center text-yellow-300 drop-shadow-lg tracking-wide max-w-4xl w-full">
         Your Upcoming Appointments 📅✨
       </h1>
 
-      {/* Cards container aligned to bottom-left with grid */}
-      <div className="w-full max-w-4xl absolute top-40 left-8">
+      {/* Cards Container */}
+      <div className="w-full max-w-6xl mx-auto px-6">
         {appointments.length === 0 ? (
           <p className="text-yellow-100 text-center py-10 text-xl">No upcoming appointments. 💤</p>
         ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
             {appointments.map((appt, index) => (
               <li
                 key={index}
-                className="relative bg-white bg-opacity-20 backdrop-blur-md border-l-8 border-gradient-to-b from-pink-400 via-yellow-400 to-green-400 rounded-3xl p-8 shadow-xl hover:shadow-3xl transition-transform duration-300 transform hover:-translate-y-1 cursor-pointer text-white drop-shadow-md max-w-md mx-auto"
+                className="relative bg-white bg-opacity-20 backdrop-blur-md border-l-8 border-gradient-to-b from-pink-400 via-yellow-400 to-green-400 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-transform duration-300 transform hover:-translate-y-2 cursor-pointer text-white drop-shadow-md"
                 style={{ minWidth: '320px' }}
               >
                 {/* Status Ribbon */}
                 <span
-                  className={`absolute top-20  right-5 px-5 py-1 rounded-full text-sm font-semibold select-none
+                  className={`absolute top-20 right-5 px-4 py-1 rounded-full text-sm font-semibold select-none
                     ${
                       appt.status === 'Confirmed'
                         ? 'bg-green-500'
@@ -69,7 +83,7 @@ const UpcomingAppointments = () => {
                 </span>
 
                 {/* Doctor Info */}
-                <div className="mb-8">
+                <div className="mb-6">
                   <h2 className="text-3xl font-extrabold tracking-wide mb-2">
                     Dr. {appt.doctorName} 👨‍⚕️
                   </h2>
@@ -79,7 +93,7 @@ const UpcomingAppointments = () => {
                 </div>
 
                 {/* Appointment Details */}
-                <div className="space-y-6 text-lg font-semibold">
+                <div className="space-y-4 text-lg font-semibold">
                   <div className="flex items-center gap-4">
                     <span className="text-3xl">📅</span>
                     <span>
@@ -125,9 +139,26 @@ const UpcomingAppointments = () => {
                         </svg>
                         <span className="text-xl font-bold tracking-wide">Reason:</span>
                       </div>
-                      <p className="text-red-900 text-md leading-relaxed">{appt.reason}</p>
+                      <p className="text-red-900 text-md leading-relaxed">{appt.rejectionReason}</p>
                     </div>
                   )}
+                </div>
+
+                {/* Booked At Label */}
+                <div className="text-sm text-white-300 mt-4 text-center">
+                  <span className="font-semibold">Booked At : </span>
+                  {new Date(appt.createdAt).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}{' '}
+                  at{' '}
+                  {new Date(appt.createdAt).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
                 </div>
               </li>
             ))}

@@ -67,6 +67,8 @@ export const getMyAppointments = async (req, res) => {
             date: appt.appointmentTime,
             reason: appt.reason,
             status: appt.status,
+            rejectionReason: appt.rejectionReason,
+            createdAt: appt.createdAt,
           });
         }
       });

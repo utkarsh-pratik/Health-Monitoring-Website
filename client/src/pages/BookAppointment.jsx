@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import notsuccess from '../assets/notifysuccess.png';
+import noterror from '../assets/notifyerror.png';
 
 const BookAppointment = () => {
   const [doctors, setDoctors] = useState([]);
@@ -38,16 +40,42 @@ const BookAppointment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Request notification permission if not granted
+    if (Notification.permission !== "granted") {
+      await Notification.requestPermission();
+    }
+
     try {
       const token = localStorage.getItem('token');
       await axios.post(`/api/appointments/book-appointment/${selectedDoctor._id}`, form, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert('Appointment booked!');
+
+      // Show success notification if permission granted
+      if (Notification.permission === "granted") {
+        new Notification("Appointment booked!", {
+          body: `Your appointment with Dr. ${selectedDoctor.name} is confirmed.`,
+          icon: {notsuccess}, // optional, add your icon in public folder
+        });
+      } else {
+        alert('Appointment booked!');
+      }
+
       setSelectedDoctor(null);
       setForm({ patientName: '', patientContact: '', appointmentTime: '', reason: '' });
     } catch (err) {
       console.error('Booking failed:', err);
+
+      // Show error notification if permission granted
+      if (Notification.permission === "granted") {
+        new Notification("Booking failed", {
+          body: "There was an error booking your appointment. Please try again.",
+          icon: {noterror}, // optional, add your icon in public folder
+        });
+      } else {
+        alert('Booking failed. Please try again.');
+      }
     }
   };
 

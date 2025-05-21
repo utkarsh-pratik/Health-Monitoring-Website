@@ -1,4 +1,3 @@
-// frontend/src/pages/PatientHistory.jsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
@@ -11,29 +10,64 @@ export default function PatientHistory() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false); // Toggle for edit form visibility
+  const [newHistory, setNewHistory] = useState(''); // State for new history input
 
+  // Fetch the patient history from the server
+  const fetchHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(
+        `http://localhost:5000/api/doctors/patient-history/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setHistory(res.data.history);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch patient history.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle saving the new or updated history
+  const handleSaveHistory = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+
+    if (!newHistory.trim()) {
+      alert('Please provide your medical history');
+      return;
+    }
+
+    setLoading(true); // Indicate that we're saving the data
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `http://localhost:5000/api/doctors/patient-history/${id}`,
+        { history: newHistory }, // Send the new history
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setHistory(res.data.history); // Update the history state with the newly saved data
+      setNewHistory(''); // Reset the form input
+      setIsEditing(false); // Close the form after saving
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to save medical history.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load patient history when the component is mounted
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(
-          `http://localhost:5000/api/doctors/patient-history/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setHistory(res.data.history);
-      } catch (err) {
-        setError(
-          err.response?.data?.message || 'Failed to fetch patient history.'
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchHistory();
   }, [id]);
 
@@ -63,31 +97,77 @@ export default function PatientHistory() {
             {error}
           </div>
         ) : history.length === 0 ? (
-          <p className="text-center text-gray-600 italic text-lg mt-10">
-            No medical history found.
-          </p>
+          <>
+            {/* If no history exists, show a form to input the history */}
+            <p className="text-center text-gray-600 italic text-lg mt-10">
+              No medical history found. Please provide your medical history below.
+            </p>
+
+            {isEditing ? (
+              <div className="mt-8">
+                <form onSubmit={handleSaveHistory}>
+                  <textarea
+                    value={newHistory}
+                    onChange={(e) => setNewHistory(e.target.value)}
+                    className="w-full h-40 p-4 border rounded-lg text-lg"
+                    placeholder="Enter your medical history..."
+                    required
+                  />
+                  <div className="mt-4 text-center">
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all duration-300"
+                    >
+                      Save History
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => setIsEditing(true)} // Show form when clicked
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all duration-300"
+                >
+                  Add Your Medical History
+                </button>
+              </div>
+            )}
+          </>
         ) : (
-          <ul className="space-y-8">
-            {history.map((item, index) => (
-              <li
-                key={index}
-                className="relative bg-white border border-indigo-300 rounded-2xl p-10 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-default overflow-visible"
+          <>
+            <ul className="space-y-8">
+              {history.map((item, index) => (
+                <li
+                  key={index}
+                  className="relative bg-white border border-indigo-300 rounded-2xl p-10 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-default overflow-visible"
+                >
+                  <div className="absolute top-0  left-0  bg-indigo-700 text-white rounded-full w-14 h-14 flex items-center justify-center font-bold text-xl shadow-lg select-none">
+                    Q{index + 1}
+                  </div>
+                  <p className="text-lg px-2 font-semibold text-indigo-900 mb-4">
+                    Q: {item.question}
+                  </p>
+                  <p className="text-gray-800 px-2 text-base leading-relaxed whitespace-pre-wrap">
+                    A: {item.answer}
+                  </p>
+                  <p className="mt-5 text-sm text-indigo-400 italic tracking-wide">
+                    {moment(item.createdAt).format('MMMM Do YYYY, h:mm A')}
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            {/* Display the Update Button when there is history */}
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => setIsEditing(true)} // Show form to update history
+                className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all duration-300"
               >
-                <div className="absolute top-0  left-0  bg-indigo-700 text-white rounded-full w-14 h-14 flex items-center justify-center font-bold text-xl shadow-lg select-none">
-                  Q{index + 1}
-                </div>
-                <p className="text-lg px-2 font-semibold text-indigo-900 mb-4">
-                  Q: {item.question}
-                </p>
-                <p className="text-gray-800 px-2  text-base leading-relaxed whitespace-pre-wrap">
-                  A: {item.answer}
-                </p>
-                <p className="mt-5 text-sm text-indigo-400 italic tracking-wide">
-                  {moment(item.createdAt).format('MMMM Do YYYY, h:mm A')}
-                </p>
-              </li>
-            ))}
-          </ul>
+                Update History
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
