@@ -20,13 +20,15 @@ app.use(express.json());
 
 
 // Public routes (no token needed)
+app.use("/api/appointments" , patientRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/patient", patientRoutes);
-app.use("/api/appointments" , patientRoutes);
+
 
 // Protected routes (token required)
 // Doctor routes (auth handled inside doctorRoutes.js)
 app.use("/api/doctors", doctorRoutes);
+
   //app.use("/api/appointments", doctorRoutes);
 
 mongoose
@@ -36,7 +38,7 @@ mongoose
   })
   .then(() => {
     console.log('✅ MongoDB Connected');
-    reminderScheduler(); // start the cron reminders after DB is connected
+   reminderScheduler(); // start the cron reminders after DB is connected...............................................................................
   })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 

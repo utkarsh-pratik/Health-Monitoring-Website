@@ -4,9 +4,13 @@ import axios from 'axios';
 const UpcomingAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [scrollY, setScrollY] = useState(0); // Track scroll position
+  const [error, setError] = useState(null); // Handle errors
+  const [loading, setLoading] = useState(true); // Handle loading state
   const token = localStorage.getItem('token');
 
+  // Fetch the appointments
   const fetchAppointments = async () => {
+    setLoading(true); // Show loading state
     try {
       const res = await axios.get('http://localhost:5000/api/appointments/getmyappointments', {
         headers: {
@@ -16,7 +20,41 @@ const UpcomingAppointments = () => {
       });
       setAppointments(res.data);
     } catch (err) {
+      // Check for different types of errors
+      if (err.response) {
+        setError(`Error: ${err.response.data.message || 'An unexpected error occurred.'}`);
+      } else if (err.request) {
+        setError('No response received. Please check your network connection.');
+      } else {
+        setError('An error occurred while setting up the request.');
+      }
       console.error('Error fetching upcoming appointments:', err);
+    } finally {
+      setLoading(false); // Hide loading state once data is fetched
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return `${date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })} at ${date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })}`;
+  };
+
+  // Handle infinite scrolling
+  const loadMoreAppointments = () => {
+    if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
+      // Implement infinite scroll logic if needed, for now, just fetch more appointments
+      fetchAppointments();
     }
   };
 
@@ -26,6 +64,7 @@ const UpcomingAppointments = () => {
     // Add event listener to track scrolling
     const handleScroll = () => {
       setScrollY(window.scrollY);
+      loadMoreAppointments(); // Trigger loading more appointments when scrolled to the bottom
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -36,50 +75,46 @@ const UpcomingAppointments = () => {
   }, [token]);
 
   return (
-    <div
-      className="min-h-screen flex flex-col bg-gradient-to-b from-purple-950 via-black to-violet-950 items-center px-6 pt-16 pb-8 relative transition-all duration-300"
-    >
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-purple-950 via-black to-violet-950 items-center px-6 pt-16 pb-8 relative transition-all duration-300">
       {/* Heading */}
       <h1 className="text-4xl font-extrabold mt-4 mb-8 text-center text-yellow-300 drop-shadow-lg tracking-wide max-w-4xl w-full">
         Your Upcoming Appointments 📅✨
       </h1>
 
+      {/* Error Handling */}
+      {error && <p className="text-red-600 text-center py-2">{error}</p>}
+
+      {/* Loading State */}
+      {loading && <p className="text-yellow-100 text-center py-10 text-xl">Loading your appointments...</p>}
+
       {/* Cards Container */}
       <div className="w-full max-w-6xl mx-auto px-6">
-        {appointments.length === 0 ? (
+        {appointments.length === 0 && !loading ? (
           <p className="text-yellow-100 text-center py-10 text-xl">No upcoming appointments. 💤</p>
         ) : (
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
-            {appointments.map((appt, index) => (
+            {appointments.map((appt) => (
               <li
-                key={index}
+                key={appt._id}
                 className="relative bg-white bg-opacity-20 backdrop-blur-md border-l-8 border-gradient-to-b from-pink-400 via-yellow-400 to-green-400 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-transform duration-300 transform hover:-translate-y-2 cursor-pointer text-white drop-shadow-md"
                 style={{ minWidth: '320px' }}
               >
                 {/* Status Ribbon */}
                 <span
                   className={`absolute top-20 right-5 px-4 py-1 rounded-full text-sm font-semibold select-none
-                    ${
-                      appt.status === 'Confirmed'
-                        ? 'bg-green-500'
-                        : appt.status === 'Pending'
-                        ? 'bg-yellow-400 text-gray-900'
-                        : appt.status === 'Cancelled'
-                        ? 'bg-red-600'
-                        : appt.status === 'Completed'
-                        ? 'bg-blue-600'
-                        : appt.status === 'Rejected'
-                        ? 'bg-red-500'
-                        : 'bg-gray-400'
-                    }
-                  `}
+                    ${appt.status === 'Confirmed' ? 'bg-green-500' : ''} 
+                    ${appt.status === 'Pending' ? 'bg-yellow-400 text-gray-900' : ''} 
+                    ${appt.status === 'Cancelled' ? 'bg-red-600' : ''} 
+                    ${appt.status === 'Completed' ? 'bg-blue-600' : ''}
+                    ${appt.status === 'Rejected' ? 'bg-red-500' : ''}
+                    ${appt.status === 'No-show' ? 'bg-gray-400' : ''}`}
                 >
                   {appt.status === 'Confirmed' && '✔️ Confirmed'}
                   {appt.status === 'Pending' && '⏳ Pending'}
                   {appt.status === 'Cancelled' && '❌ Cancelled'}
                   {appt.status === 'Completed' && '✅ Completed'}
                   {appt.status === 'Rejected' && '🚫 Rejected'}
-                  {!['Confirmed', 'Pending', 'Cancelled', 'Completed', 'Rejected'].includes(appt.status) && appt.status}
+                  {appt.status === 'No-show' && '🚫 No-show'}
                 </span>
 
                 {/* Doctor Info */}
@@ -96,14 +131,7 @@ const UpcomingAppointments = () => {
                 <div className="space-y-4 text-lg font-semibold">
                   <div className="flex items-center gap-4">
                     <span className="text-3xl">📅</span>
-                    <span>
-                      {new Date(appt.date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
+                    <span>{formatDate(appt.date)}</span>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -120,9 +148,7 @@ const UpcomingAppointments = () => {
                   {/* Rejection / Cancel Reason */}
                   {(appt.status === 'Cancelled' || appt.status === 'Rejected') && appt.reason && (
                     <div
-                      className="relative bg-gradient-to-r from-red-200 via-red-300 to-red-400 text-red-900 p-6 rounded-2xl border-2 border-red-600 shadow-lg shadow-red-500/50 font-semibold
-                        animate-pulse
-                        hover:scale-[1.05] transition-transform duration-300 ease-in-out cursor-help select-text"
+                      className="relative bg-gradient-to-r from-red-200 via-red-300 to-red-400 text-red-900 p-6 rounded-2xl border-2 border-red-600 shadow-lg shadow-red-500/50 font-semibold animate-pulse hover:scale-[1.05] transition-transform duration-300 ease-in-out cursor-help select-text"
                       title="Reason for cancellation or rejection"
                     >
                       <div className="flex items-center gap-4 mb-2">
@@ -146,19 +172,12 @@ const UpcomingAppointments = () => {
 
                 {/* Booked At Label */}
                 <div className="text-sm text-white-300 mt-4 text-center">
-                  <span className="font-semibold">Booked At : </span>
-                  {new Date(appt.createdAt).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}{' '}
-                  at{' '}
-                  {new Date(appt.createdAt).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                  })}
+                  <span className="font-semibold">Booked At: </span>
+                  {appt.createdAt ? (
+                    formatDate(appt.createdAt)
+                  ) : (
+                    <span>Appointment time not available</span>
+                  )}
                 </div>
               </li>
             ))}

@@ -32,46 +32,43 @@ export const getAvailableDoctors = async (req, res) => {
     .toString()
     .padStart(2, "0")}`;
 
-  // Extract filters from query
-  const { day, name, specialty, minFee, maxFee } = req.query;
+  const { name, specialty, maxFee } = req.query;
 
   try {
     const doctors = await Doctor.find();
 
     const availableDoctors = doctors.filter((doctor) => {
-      // Filter by day (query param or current day)
-      const targetDay = day || currentDay;
-      const availabilityForDay = doctor.availability.find((d) => d.day === targetDay);
-      if (!availabilityForDay) return false;
+      // Find the doctor's availability for the current day (currentDay)
+      const availabilityForDay = doctor.availability.find((d) => d.day === currentDay);
+      if (!availabilityForDay) return false; // No availability for the current day
 
-      // Check availability in time slots for targetDay
-      const isAvailableNow = availabilityForDay.slots.some((slot) => {
-        return currentTime >= slot.start && currentTime <= slot.end;
+      // Check if any slot is available during the current time
+      const isAvailableAtTime = availabilityForDay.slots.some((slot) => {
+        const startTime = slot.start;
+        const endTime = slot.end;
+
+        // Check if the current time falls within the start and end times of the slot
+        return currentTime >= startTime && currentTime <= endTime;
       });
-      if (!isAvailableNow) return false;
 
-      // Filter by name if provided (case-insensitive)
-      if (name && !doctor.name.toLowerCase().includes(name.toLowerCase())) {
-        return false;
+      if (!isAvailableAtTime) return false; // Doctor not available at current time
+
+      // Apply filters for name, specialty, and maxFee
+      if (name && !doctor.name.toLowerCase().includes(name.toLowerCase())) return false;
+
+      // Handle specialty filter with case-insensitive comparison
+      if (specialty) {
+        const doctorSpecialty = doctor.specialty.toLowerCase().trim();
+        const userSpecialty = specialty.toLowerCase().trim();
+        if (!doctorSpecialty.includes(userSpecialty)) return false;
       }
 
-      // Filter by specialty if provided (case-insensitive)
-      if (specialty && !doctor.specialty.toLowerCase().includes(specialty.toLowerCase())) {
-        return false;
-      }
+      if (maxFee && Number(doctor.consultationFees) > Number(maxFee)) return false;
 
-      // Filter by consultation fees if provided (range)
-      if (minFee && Number(doctor.consultationFees) < Number(minFee)) {
-        return false;
-      }
-      if (maxFee && Number(doctor.consultationFees) > Number(maxFee)) {
-        return false;
-      }
-
-      return true;
+      return true; // Doctor is available at the current time and meets filter criteria
     });
 
-    res.status(200).json(availableDoctors);
+    res.status(200).json(availableDoctors); // Return the list of available doctors
   } catch (err) {
     console.error("Error fetching available doctors:", err);
     res.status(500).json({ message: "Server error" });

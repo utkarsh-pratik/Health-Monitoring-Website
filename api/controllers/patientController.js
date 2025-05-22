@@ -132,3 +132,148 @@ export const postHistory = async (req, res) => {
     res.status(500).json({ error: "Failed to save medical history." });
   }
 };
+
+
+
+// Add a doctor to the patient's favorites
+// export const addToFavorites = async (req, res) => {
+//   try {
+//     const patientId = req.user_id;
+//     const { doctorId } = req.body;
+
+//     if (!doctorId) {
+//       return res.status(400).json({ message: "Doctor ID is required." });
+//     }
+
+//     // Find the patient
+//     const patient = await Patient.findById(patientId);
+//     if (!patient) {
+//       return res.status(404).json({ message: "Patient not found" });
+//     }
+
+//     // Find the doctor
+//     const doctor = await Doctor.findById(doctorId);
+//     if (!doctor) {
+//       return res.status(404).json({ message: "Doctor not found" });
+//     }
+
+//     if (patient.favorites.includes(doctorId)) {
+//       return res.status(400).json({ message: "Doctor is already in favorites" });
+//     }
+
+//     patient.favorites.push(doctorId);
+//     await patient.save();
+
+//     return res.status(200).json({ message: "Doctor added to favorites", favorites: patient.favorites });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: "An error occurred while adding the doctor to favorites" });
+//   }
+// };
+
+
+// Add Doctor to Favorites
+// Remove a doctor from the patient's favorites
+// export const removeFromFavorites = async (req, res) => {
+//     try {
+//         const { doctorId } = req.body;
+//         const patientId = req.user._id;
+
+//         const patient = await Patient.findById(patientId);
+
+//         if (!patient) {
+//             return res.status(404).json({ message: "Patient not found" });
+//         }
+
+//         // Check if doctor is in favorites
+//         if (!patient.favorites.includes(doctorId)) {
+//             return res.status(400).json({ message: "Doctor is not in favorites" });
+//         }
+
+//         // Remove doctor from favorites
+//         patient.favorites = patient.favorites.filter((id) => id.toString() !== doctorId);
+//         await patient.save();
+
+//         return res.status(200).json({ message: "Doctor removed from favorites" });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ message: error.message });
+//     }
+// };
+
+
+// Remove Doctor from Favorites
+
+
+// Get All Favorite Doctors for a Patient
+// export const getFavorites = async (req, res) => {
+//     try {
+//         const patientId = req.user._id;
+
+//         const patient = await Patient.findById(patientId).populate("favorites", "name specialty");
+
+//         if (!patient) {
+//             return res.status(404).json({ message: "Patient not found" });
+//         }
+
+//         return res.status(200).json({ favorites: patient.favorites });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ message: error.message });
+//     }
+// };
+
+
+export const addDoctorToFavorites = async (req, res) => {
+  const { doctorId } = req.body; // doctorId from body
+  const patientId = req.user._id; // Logged-in patient's ID from JWT
+
+  console.log('Received doctorId:', doctorId);
+  console.log('Patient ID from JWT:', patientId);
+
+  try {
+    // Validate doctorId
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      console.log('Invalid doctor ID');
+      return res.status(400).json({ message: 'Invalid doctor ID' });
+    }
+
+    // Find the patient by ID
+    console.log('Searching for patient with ID:', patientId);
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      console.log('Patient not found');
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    // Log patient favorites for debugging
+    console.log('Patient favorites before adding doctor:', patient.favorites);
+
+    // Check if the doctor is already in the patient's favorites
+    if (patient.favorites.includes(doctorId)) {
+      console.log('Doctor is already in favorites');
+      return res.status(400).json({ message: 'Doctor is already in favorites' });
+    }
+
+    // Find the doctor (optional check)
+    console.log('Searching for doctor with ID:', doctorId);
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+      console.log('Doctor not found');
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+
+    // Add doctor to favorites
+    patient.favorites.push(doctorId);
+    console.log('Adding doctor to favorites');
+    await patient.save();
+
+    // Log the updated patient favorites
+    console.log('Patient favorites after adding doctor:', patient.favorites);
+
+    res.status(200).json({ success: true, message: 'Doctor added to favorites' });
+  } catch (error) {
+    console.error('Error adding doctor to favorites:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

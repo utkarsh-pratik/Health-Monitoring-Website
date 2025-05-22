@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { FaHeart, FaRegHeart } from 'react-icons/fa'; // Import React Icons
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import notsuccess from '../assets/notifysuccess.png';
 import noterror from '../assets/notifyerror.png';
 
@@ -9,7 +11,7 @@ const BookAppointment = () => {
   const [form, setForm] = useState({
     patientName: '',
     patientContact: '',
-    appointmentTime: '',
+    appointmentTime: new Date().toISOString().slice(0, 16), // Default to current date and time
     reason: '',
   });
 
@@ -20,8 +22,15 @@ const BookAppointment = () => {
     day: '',
   });
 
+  const [loading, setLoading] = useState(false); // Loading state for doctors
+  const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('favorites')) || []); // State to manage favorites
+
+  const navigate = useNavigate(); // Hook for redirection
+
+  // Fetch doctors based on filters
   useEffect(() => {
     const fetchDoctors = async () => {
+      setLoading(true);
       try {
         const params = {};
         if (filters.name) params.name = filters.name;
@@ -33,30 +42,69 @@ const BookAppointment = () => {
         setDoctors(res.data);
       } catch (err) {
         console.error('Error fetching doctors:', err);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchDoctors();
   }, [filters]);
 
+  // Date validation
+  const isValidDate = (dateString) => {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  };
+
+  // Add doctor to favorites in localStorage
+  const addToFavorites = (doctor) => {
+    let updatedFavorites = [...favorites];
+    if (!updatedFavorites.some((fav) => fav._id === doctor._id)) {
+      updatedFavorites.push(doctor);
+      setFavorites(updatedFavorites); // Update state
+      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
+    } else {
+      updatedFavorites = updatedFavorites.filter((fav) => fav._id !== doctor._id); // Remove from favorites
+      setFavorites(updatedFavorites);
+      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
+    }
+  };
+
+  // Check if doctor is in favorites
+  const isFavorite = (doctorId) => {
+    return favorites.some((fav) => fav._id === doctorId);
+  };
+
+  // Handle form submission for booking an appointment
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isValidDate(form.appointmentTime)) {
+      alert('Please select a valid appointment time.');
+      return;
+    }
+
     // Request notification permission if not granted
-    if (Notification.permission !== "granted") {
+    if (Notification.permission !== 'granted') {
       await Notification.requestPermission();
     }
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`/api/appointments/book-appointment/${selectedDoctor._id}`, form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.post(
+        `/api/appointments/book-appointment/${selectedDoctor._id}`,
+        form,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          ContentType: 'application/json',
+        }
+      );
 
       // Show success notification if permission granted
-      if (Notification.permission === "granted") {
-        new Notification("Appointment booked!", {
+      if (Notification.permission === 'granted') {
+        new Notification('Appointment booked!', {
           body: `Your appointment with Dr. ${selectedDoctor.name} is confirmed.`,
-          icon: {notsuccess}, // optional, add your icon in public folder
+          icon: notsuccess,
         });
       } else {
         alert('Appointment booked!');
@@ -64,14 +112,15 @@ const BookAppointment = () => {
 
       setSelectedDoctor(null);
       setForm({ patientName: '', patientContact: '', appointmentTime: '', reason: '' });
+      navigate('/patient/appointments'); // Redirect to appointments page after booking
     } catch (err) {
       console.error('Booking failed:', err);
 
       // Show error notification if permission granted
-      if (Notification.permission === "granted") {
-        new Notification("Booking failed", {
-          body: "There was an error booking your appointment. Please try again.",
-          icon: {noterror}, // optional, add your icon in public folder
+      if (Notification.permission === 'granted') {
+        new Notification('Booking failed', {
+          body: 'There was an error booking your appointment. Please try again.',
+          icon: noterror,
         });
       } else {
         alert('Booking failed. Please try again.');
@@ -83,166 +132,157 @@ const BookAppointment = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-950 to-black py-16 px-6 md:px-12 font-sans">
       {/* Title */}
       <div className="text-center mb-14">
-        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text text-white mt-4  select-none">
+        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text text-white mt-4 select-none">
           Available Doctors
         </h1>
       </div>
 
       {/* Filters */}
-      <div className="relative z-10 postion:relative bottom-9  mb-5 mt-1 flex flex-wrap gap-4 max-w-6xl w-full mx-auto justify-center">
+      <div className="relative z-10 mb-20 - mt-20 position:relative bottom-14 flex flex-wrap gap-4 max-w-6xl w-full mx-auto justify-center">
         <input
           type="text"
-          placeholder="Name"
+          placeholder="Search by Name"
           value={filters.name}
           onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-          className="min-w-[120px] px-4 py-2 rounded-full shadow-md border border-transparent bg-black bg-opacity-80 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm transition duration-300"
+          className="px-4 py-2 rounded-lg border border-purple-700 bg-[#2e1a58] text-white"
         />
-        <select
+        <input
+          type="text"
+          placeholder="Specialty"
           value={filters.specialty}
           onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
-          className="min-w-[140px] px-4 py-2 rounded-full shadow-md border border-transparent bg-black bg-opacity-80 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm transition duration-300"
-        >
-          <option value="" className="text-gray-400">Specialty</option>
-          <option value="Cardiologist">Cardiologist</option>
-          <option value="Dermatologist">Dermatologist</option>
-          <option value="Neurologist">Neurologist</option>
-        </select>
+          className="px-4 py-2 rounded-lg border border-purple-700 bg-[#2e1a58] text-white"
+        />
         <input
           type="number"
-          placeholder="Max Fee"
+          placeholder="Max Consultation Fee"
           value={filters.maxFee}
           onChange={(e) => setFilters({ ...filters, maxFee: e.target.value })}
-          className="min-w-[100px] px-4 py-2 rounded-full shadow-md border border-transparent bg-black bg-opacity-80 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm transition duration-300"
+          className="px-4 py-2 rounded-lg border border-purple-700 bg-[#2e1a58] text-white"
         />
-        <select
+        {/* <input
+          type="date"
           value={filters.day}
           onChange={(e) => setFilters({ ...filters, day: e.target.value })}
-          className="min-w-[110px] px-4 py-2 rounded-full shadow-md border border-transparent bg-black bg-opacity-80 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm transition duration-300"
-        >
-          <option value="" className="text-gray-400">Day</option>
-          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-            <option key={day} value={day}>{day}</option>
-          ))}
-        </select>
-
-        <button
-          onClick={() => setFilters({ name: '', specialty: '', maxFee: '', day: '' })}
-          className="px-5 py-2 bg-black bg-opacity-90 hover:bg-purple-800 text-white font-semibold rounded-full shadow-lg text-sm transition duration-400 whitespace-nowrap"
-          aria-label="Reset filters"
-        >
-          Reset
-        </button>
+          className="px-4 py-2 rounded-lg border border-purple-700 bg-[#2e1a58] text-white"
+        /> */}
       </div>
 
-      {/* Doctor Cards Grid */}
-      <div className="grid grid-cols-1 -mt-9  md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl">
-        {doctors.length === 0 ? (
-          <p className="text-center text-white/90 col-span-full text-lg font-semibold drop-shadow-lg">
-            No available doctors at the moment.
-          </p>
-        ) : (
-          doctors.map((doc) => (
-            <div
-              key={doc._id}
-              onClick={() => setSelectedDoctor(doc)}
-              className="cursor-pointer bg-black bg-opacity-40 rounded-3xl shadow-lg shadow-purple-900/60 hover:shadow-purple-700/80 transform hover:-translate-y-4 transition-transform duration-300 border border-purple-700"
-            >
-              <img
-                src={doc.imageUrl}
-                alt={doc.name}
-                className="rounded-t-3xl h-56 w-full object-cover border-b border-purple-700"
-              />
-              <div className="p-2 text-white">
-                <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#a855f7] to-[#7e22ce] bg-clip-text text-transparent drop-shadow-md select-none">
-                  {doc.name}
-                </h2>
-                <p className="text-sm text-purple-300 italic mt-1 select-none">{doc.specialty}</p>
-                <p className="mt-3 font-semibold text-purple-400 select-none">
-                  Consultation Fee: ₹{doc.consultationFees}
-                </p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedDoctor(doc);
-                  }}
-                  className="mt-5 w-full bg-gradient-to-r from-purple-700 via-purple-900 to-purple-800 hover:from-purple-900 hover:via-purple-700 hover:to-purple-900 text-white font-bold py-3 rounded-xl shadow-md transition duration-300 select-none"
-                >
-                  Book Now
-                </button>
+      {/* Loading Indicator */}
+      {loading ? (
+        <div className="text-center text-white">Loading doctors...</div>
+      ) : (
+        <div className="grid grid-cols-1 -mt-28 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl">
+          {doctors.length === 0 ? (
+            <p className="text-center text-white/90 col-span-full text-lg font-semibold drop-shadow-lg">
+              No available doctors at the moment.
+            </p>
+          ) : (
+            doctors.map((doc) => (
+              <div
+                key={doc._id}
+                onClick={() => {
+                  setSelectedDoctor(doc); // Set the selected doctor here
+                }}
+                className="cursor-pointer bg-black bg-opacity-40 rounded-3xl shadow-lg shadow-purple-900/60 hover:shadow-purple-700/80 transform hover:-translate-y-4 transition-transform duration-300 border border-purple-700"
+              >
+                <img
+                  src={doc.imageUrl || '/default-doctor.jpg'}
+                  alt={doc.name}
+                  className="rounded-t-3xl h-56 w-full object-cover border-b border-purple-700"
+                />
+                <div className="p-2 text-white">
+                  <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#a855f7] to-[#7e22ce] bg-clip-text text-transparent drop-shadow-md select-none">
+                    {doc.name}
+                  </h2>
+                  <p className="text-sm text-purple-300 italic mt-1 select-none">{doc.specialty}</p>
+                  <p className="mt-3 font-semibold text-purple-400 select-none">
+                    Consultation Fee: ₹{doc.consultationFees}
+                  </p>
+
+                  {/* Add to Favorites Button */}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent the button click from propagating to parent click
+                      addToFavorites(doc); // Pass the correct doctor here
+                    }}
+                    className="mt-5 flex justify-end"
+                  >
+                    {isFavorite(doc._id) ? (
+                      <FaHeart className="text-red-500" size={24} /> // Filled heart (favorite)
+                    ) : (
+                      <FaRegHeart className="text-white" size={24} /> // Outline heart (not favorite)
+                    )}
+                  </div>
+
+                  {/* Book Appointment Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedDoctor(doc); 
+                    }}
+                    className="mt-5 w-full bg-gradient-to-r from-purple-700 via-purple-900 to-purple-800 hover:from-purple-900 hover:via-purple-700 hover:to-purple-800 py-2 rounded-xl text-white shadow-md transition"
+                  >
+                    Book Appointment
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      )}
 
-      {/* Fullscreen Modal Form */}
+      {/* Booking Form */}
       {selectedDoctor && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50 px-4">
-          <div className="bg-[#1e0f3a] rounded-3xl max-w-lg w-full p-8 shadow-2xl relative border border-purple-700 animate-fadeIn">
-            <button
-              onClick={() => setSelectedDoctor(null)}
-              className="absolute top-6 right-6 text-purple-400 hover:text-purple-700 text-3xl font-bold transition select-none"
-              aria-label="Close form"
-            >
-              &times;
-            </button>
-            <h2 className="text-3xl font-extrabold mb-6 text-purple-400 text-center select-none">
-              Book Appointment with Dr. {selectedDoctor.name}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-70 z-50">
+          <div className="bg-white rounded-lg w-96 p-6">
+            <h3 className="text-xl font-semibold mb-4">Book an Appointment with {selectedDoctor.name}</h3>
+            <form onSubmit={handleSubmit}>
               <input
                 type="text"
-                placeholder="Patient Name"
+                placeholder="Your Name"
                 value={form.patientName}
                 onChange={(e) => setForm({ ...form, patientName: e.target.value })}
-                className="w-full border border-purple-700 rounded-xl p-3 bg-[#2e1a58] placeholder-purple-300 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
+                className="w-full p-2 mb-3 border rounded-lg"
                 required
               />
               <input
                 type="text"
-                placeholder="Email"
+                placeholder="Contact Number"
                 value={form.patientContact}
                 onChange={(e) => setForm({ ...form, patientContact: e.target.value })}
-                className="w-full border border-purple-700 rounded-xl p-3 bg-[#2e1a58] placeholder-purple-300 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
+                className="w-full p-2 mb-3 border rounded-lg"
                 required
               />
               <input
                 type="datetime-local"
                 value={form.appointmentTime}
                 onChange={(e) => setForm({ ...form, appointmentTime: e.target.value })}
-                className="w-full border border-purple-700 rounded-xl p-3 bg-[#2e1a58] placeholder-purple-300 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
+                className="w-full p-2 mb-3 border rounded-lg"
                 required
               />
-              <input
-                type="text"
-                placeholder="Reason (optional)"
+              <textarea
+                placeholder="Reason for Visit"
                 value={form.reason}
                 onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                className="w-full border border-purple-700 rounded-xl p-3 bg-[#2e1a58] placeholder-purple-300 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
+                className="w-full p-2 mb-4 border rounded-lg"
               />
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-purple-700 via-purple-900 to-purple-800 hover:from-purple-900 hover:via-purple-700 hover:to-purple-900 text-white font-bold py-3 rounded-xl shadow-md transition duration-300"
-              >
-                Confirm Booking
+              <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
+                Confirm Appointment
               </button>
             </form>
+            <button
+              onClick={() => setSelectedDoctor(null)}
+              className="mt-4 text-red-500 w-full py-2 rounded-lg"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
-
-      {/* Animation Styles */}
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease forwards;
-        }
-      `}</style>
     </div>
   );
 };
 
 export default BookAppointment;
+

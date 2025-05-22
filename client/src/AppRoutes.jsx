@@ -11,6 +11,7 @@ import CreateListing from "./pages/CreateListing";
 import About from "./pages/About";
 import DoctorHome from "./pages/doctorHome";
 import PatientHome from "./pages/patientHome";
+import Favorite from "./pages/Favorites";
 
 import DoctorLayout from "./layouts/DoctorLayout";
 import PatientLayout from "./layouts/PatientLayout";
@@ -60,7 +61,9 @@ const AppRoutes = () => {
       <Route path="/patient" element={<PatientLayout />}>
         <Route path="home" element={<PatientHome />} />
         <Route path="appointments" element={<BookAppointment />} />
+        
         <Route  path="post-history" element={<PatientDashboard />} />
+        <Route path="favorites" element={<Favorite />} />
         <Route path="about" element={<About />} />
          <Route path="appointments/upcoming" element={<UpcomingAppointments />} />
 

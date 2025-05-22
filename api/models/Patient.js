@@ -25,6 +25,10 @@ const patientSchema = new mongoose.Schema({
     type: String,
     select: false
   },
+   favorites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Doctor'
+    }],
  
   age: Number,
   gender: {
