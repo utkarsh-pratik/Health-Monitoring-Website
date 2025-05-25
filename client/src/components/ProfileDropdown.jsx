@@ -24,7 +24,7 @@ const ProfileDropdown = () => {
         onClick={() => setOpen(!open)}
         className="flex items-center text-white hover:bg-blue-800/50 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 focus:outline-none"
       >
-        <span className="text-orange-400 mr-2">⚙️</span> Settings 
+        Profile & Settings <span className="ml-2 text-orange-400">⚙️</span>
       </button>
 
       {open && (

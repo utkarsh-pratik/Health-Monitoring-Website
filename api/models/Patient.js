@@ -37,12 +37,6 @@ const patientSchema = new mongoose.Schema({
   },
   contactNumber: String,
   address: String,
-  bloodGroup: String,
-  emergencyContact: String,
-  allergies: String,
-  chronicIllnesses: String,
-  currentMedications: String,
-  photo: { type: String, default: "" },
 
   // ✅ Corrected here
   medicalHistory: [medicalHistorySchema],
@@ -55,3 +49,6 @@ const patientSchema = new mongoose.Schema({
 
 const Patient = mongoose.model('Patient', patientSchema);
 export default Patient;
+
+
+

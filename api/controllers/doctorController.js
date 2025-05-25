@@ -1,213 +1,208 @@
-import Doctor from "../models/Doctor.js";
-import Patient from "../models/Patient.js";
+import User from "../models/User.js";
+import Doctor from "../models/Doctor.js"; // Adjust path as needed
+import Patient from "../models/Patient.js"; // Adjust path as needed
 
-// CREATE doctor profile (listing)
-export const createDoctorListing = async (req, res) => {
+
+export const setAvailability = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const {
-      name, specialty, description, consultationFees,
-      qualifications, yearsOfExperience, contactNumber,
-      clinicName, clinicAddress, registrationNumber,
-      gender, languages, linkedIn, awards, services
-    } = req.body;
+    const doctorUserId = req.user._id; // Extracted from auth middleware
+    const { availability } = req.body; // <-- Update key name
 
-    // Handle languages as array
-    const languagesArray = Array.isArray(languages)
-      ? languages
-      : (typeof languages === "string"
-          ? languages.split(",").map(l => l.trim()).filter(Boolean)
-          : []);
-
-    const doctorData = {
-      name,
-      specialty,
-      description,
-      consultationFees,
-      qualifications,
-      yearsOfExperience,
-      contactNumber,
-      clinicName,
-      clinicAddress,
-      registrationNumber,
-      gender,
-      languages: languagesArray,
-      linkedIn,
-      awards,
-      services,
-      imageUrl: req.file?.path,
-      userRef: userId,
-    };
-
-    // Prevent duplicate listing for same user
-    const existing = await Doctor.findOne({ userRef: userId });
-    if (existing) {
-      return res.status(400).json({ message: "Doctor profile already exists. Please edit your profile instead." });
-    }
-
-    const doctor = new Doctor(doctorData);
-    await doctor.save();
-    res.status(201).json(doctor);
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ message: error.message });
-    }
-    res.status(500).json({ message: "Failed to create doctor profile" });
-  }
-};
-
-// GET doctor profile for logged-in doctor
-export const getMyProfile = async (req, res) => {
-  try {
-    const doctor = await Doctor.findOne({ userRef: req.user._id });
-    if (!doctor) return res.status(404).json({ message: "Doctor profile not found" });
-    res.json(doctor);
-  } catch (error) {
-    console.error("Error fetching doctor profile:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// UPDATE doctor profile for logged-in doctor
-export const updateDoctorProfile = async (req, res) => {
-  try {
-    console.log("Updating doctor profile for user:", req.user._id);
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file);
-
-    const {
-      name, 
-      specialty, description, consultationFees,
-      qualifications, yearsOfExperience, contactNumber,
-      clinicName, clinicAddress, registrationNumber,
-      gender, languages, linkedIn, awards, services
-    } = req.body;
-
-    const updates = {
-      specialty,
-      description,
-      consultationFees,
-      qualifications,
-      yearsOfExperience,
-      contactNumber,
-      clinicName,
-      clinicAddress,
-      registrationNumber,
-      gender,
-      linkedIn,
-      awards,
-      services,
-    };
-
-    const allowedGenders = ["Male", "Female", "Other"];
-if (!allowedGenders.includes(updates.gender)) {
-  delete updates.gender;
-}
-
-    // Handle languages as array
-    updates.languages = Array.isArray(languages)
-      ? languages
-      : (typeof languages === "string"
-          ? languages.split(",").map(l => l.trim()).filter(Boolean)
-          : []);
-
-    // If image uploaded
-    if (req.file && req.file.path) {
-      updates.imageUrl = req.file.path;
-    }
-
-    const doctor = await Doctor.findOneAndUpdate(
-      { userRef: req.user._id },
-      updates,
-      { new: true, runValidators: true }
-    );
+    const doctor = await Doctor.findOne({ userRef: doctorUserId });
     if (!doctor) {
-      console.log("No doctor found for userRef:", req.user._id);
       return res.status(404).json({ message: "Doctor profile not found" });
     }
-    res.json(doctor);
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ message: error.message });
-    }
-    res.status(500).json({ message: "Failed to create doctor profile" });
-  }
-};
 
-// (Optional) GET all doctors (for listing/search)
-export const getAllDoctors = async (req, res) => {
-  try {
-    const doctors = await Doctor.find();
-    res.json(doctors);
+    doctor.availability = availability;  // <-- Save to correct field
+    doctor.markModified("availability"); // Optional but safe
+    await doctor.save();
+
+    res.status(200).json({ message: "Availability updated successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error updating availability:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 export const getAvailableDoctors = async (req, res) => {
+  const now = new Date();
+  const currentDay = now.toLocaleString("en-US", { weekday: "long" });
+  const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now
+    .getMinutes()
+    .toString()
+    .padStart(2, "0")}`;
+
+  const { name, specialty, maxFee } = req.query;
+
   try {
-    const doctors = await Doctor.find(); // You can add filters as needed
-    res.json(doctors);
-  } catch (error) {
+    const doctors = await Doctor.find();
+
+    const availableDoctors = doctors.filter((doctor) => {
+      // Find the doctor's availability for the current day (currentDay)
+      const availabilityForDay = doctor.availability.find((d) => d.day === currentDay);
+      if (!availabilityForDay) return false; // No availability for the current day
+
+      // Check if any slot is available during the current time
+      const isAvailableAtTime = availabilityForDay.slots.some((slot) => {
+        const startTime = slot.start;
+        const endTime = slot.end;
+
+        // Check if the current time falls within the start and end times of the slot
+        return currentTime >= startTime && currentTime <= endTime;
+      });
+
+      if (!isAvailableAtTime) return false; // Doctor not available at current time
+
+      // Apply filters for name, specialty, and maxFee
+      if (name && !doctor.name.toLowerCase().includes(name.toLowerCase())) return false;
+
+      // Handle specialty filter with case-insensitive comparison
+      if (specialty) {
+        const doctorSpecialty = doctor.specialty.toLowerCase().trim();
+        const userSpecialty = specialty.toLowerCase().trim();
+        if (!doctorSpecialty.includes(userSpecialty)) return false;
+      }
+
+      if (maxFee && Number(doctor.consultationFees) > Number(maxFee)) return false;
+
+      return true; // Doctor is available at the current time and meets filter criteria
+    });
+
+    res.status(200).json(availableDoctors); // Return the list of available doctors
+  } catch (err) {
+    console.error("Error fetching available doctors:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get patient history for a given patientId
-export const getPatientHistory = async (req, res) => {
+
+
+export const createDoctorListing = async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.patientId);
-    if (!patient) return res.status(404).json({ message: "Patient not found" });
-    res.json({ history: patient.medicalHistory || [] });
+    const userId = req.user._id; // from authenticate middleware
+    const { name, specialty, description, consultationFees } = req.body;
+    const imageUrl = req.file?.path; // multer or cloudinary URL
+
+    // Validate inputs
+    if (!name || !specialty || !description || !imageUrl || !consultationFees) {
+      return res.status(400).json({ message: "All fields including image are required" });
+    }
+
+    // Convert consultationFees to number and validate
+    const feesNumber = Number(consultationFees);
+    if (isNaN(feesNumber) || feesNumber < 0) {
+      return res.status(400).json({ message: "Consultation fees must be a valid non-negative number" });
+    }
+
+    const newListing = new Doctor({
+      name,
+      specialty,
+      description,
+      consultationFees: feesNumber, // save as Number
+      imageUrl,
+      userRef: userId,
+    });
+
+    await newListing.save();
+
+    res.status(201).json({
+      message: "Doctor listing created successfully",
+      listing: newListing,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Error creating doctor listing:", error);
+    res.status(500).json({ message: "Failed to create listing", error: error.message });
   }
 };
 
-// Get scheduled appointments for the logged-in doctor
+// doctorController.js
+
+
+
 export const getScheduledAppointments = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ userRef: req.user._id });
-    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
-    res.json({ appointments: doctor.appointments || [] });
+    const userId = req.user._id; // This is the user ID from token
+
+    // Find doctor by userRef (user ID)
+    const doctor = await Doctor.findOne({ userRef: userId }).populate({
+      path: 'appointments.patientRef',
+      select: '-password -__v',
+    });
+
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+
+    res.status(200).json({ appointments: doctor.appointments });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error('Error fetching scheduled appointments:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-// Set availability for the logged-in doctor
-export const setAvailability = async (req, res) => {
+
+
+
+// GET /api/doctors/patient-history/:patientId
+export const getPatientHistory = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ userRef: req.user._id });
-    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    const { patientId } = req.params;
 
-    // Expecting availability in req.body.availability (array of slots)
-    doctor.availability = req.body.availability;
-    await doctor.save();
+    const patient = await Patient.findById(patientId);
 
-    res.json({ message: "Availability updated successfully", availability: doctor.availability });
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    res.status(200).json({ history: patient.medicalHistory || [] });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error fetching patient history:", error);
+    res.status(500).json({ message: "Server error while fetching history" });
   }
 };
 
+
+
+// Update appointment status (Accept / Cancel)
+// ✅ UPDATED: Update appointment status (Accept / Cancel)
 export const updateAppointmentStatus = async (req, res) => {
   try {
+    const doctorId = req.user._id;
     const { apptId } = req.params;
-    const { status, reason } = req.body;
+    const { reason, status } = req.body;
 
-    const doctor = await Doctor.findOne({ 'appointments._id': apptId });
-    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    // ✅ Validate status value
+    if (!['Confirmed', 'Cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
 
+    // ✅ Find the doctor
+    const doctor = await Doctor.findOne({ userRef: doctorId });
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+
+    // ✅ Find the embedded appointment
     const appointment = doctor.appointments.id(apptId);
-    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
-    appointment.status = status || appointment.status;
-    if (reason) appointment.reason = reason;
+    // ✅ Update fields
+    appointment.status = status;
+    appointment.rejectionReason = reason || '';
+    appointment.updatedAt = new Date();
+
+    doctor.markModified('appointments');
     await doctor.save();
 
-    res.json({ message: "Appointment status updated", appointment });
+    // ✅ Re-fetch updated doctor and appointment from DB
+    const updatedDoctor = await Doctor.findOne({ userRef: doctorId });
+    const updatedAppointment = updatedDoctor.appointments.id(apptId);
+
+    // ✅ Send updated appointment
+    res.json({
+      message: 'Appointment status updated successfully',
+      appointment: updatedAppointment,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error('Update Error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

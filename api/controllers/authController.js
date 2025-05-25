@@ -76,7 +76,7 @@ export const login = async (req, res) => {
 
     // ✅ Use _id in token payload for consistency
     const token = jwt.sign(
-      { _id: user._id, role: user.role, name: user.name, contact: user.email }, 
+      { _id: user._id, role: user.role }, 
       process.env.JWT_SECRET, 
       { expiresIn: "1h" }
     );
@@ -92,17 +92,5 @@ export const login = async (req, res) => {
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ error: "Error logging in" });
-  }
-};
-
-export const getProfile = async (req, res) => {
-  try {
-    const userId = req.user._id; // Extracted from JWT
-    const user = await User.findById(userId).select("-password"); // Exclude password
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.status(200).json(user);
-  } catch (error) {
-    console.error("Error fetching profile:", error);
-    res.status(500).json({ message: "Server error" });
   }
 };

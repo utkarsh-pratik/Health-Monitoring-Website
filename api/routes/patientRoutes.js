@@ -4,8 +4,6 @@ import { authenticate } from "../middlewares/authMiddleware.js";
 import {getMyAppointments} from "../controllers/patientController.js";
 import {postHistory} from "../controllers/patientController.js";
 import {addDoctorToFavorites} from "../controllers/patientController.js";
-import { getPatientProfile, updatePatientProfile } from "../controllers/patientController.js";
-import parser from "../middlewares/multerCloudinary.js";
 const router = express.Router();
 
 // Patient books appointment with a doctor
@@ -20,7 +18,6 @@ router.post("/post-history",authenticate,postHistory);
 
 // // Get All Favorites
 
-router.get("/profile", authenticate, getPatientProfile);
-router.put("/profile", authenticate, parser.single("photo"), updatePatientProfile);
+
 
 export default router;
