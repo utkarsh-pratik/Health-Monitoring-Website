@@ -27,7 +27,7 @@ export const authenticate = (req, res, next) => {
 
     // Attach user info to request
     req.user = {
-      _id: decoded.id || decoded._id,  // based on what you encoded
+      _id: decoded._id || decoded.id,  // based on what you encoded
       role: decoded.role,
       name: decoded.name,
       contact: decoded.contact,

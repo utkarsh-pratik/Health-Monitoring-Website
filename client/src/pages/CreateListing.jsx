@@ -1,149 +1,321 @@
 // src/pages/CreateListing.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
+
+const defaultAvatar = "https://api.dicebear.com/7.x/adventurer/svg?seed=doctor";
+
+
+// All doctor profile fields
+const doctorFields = [
+  { key: "specialty", label: "Specialty", type: "text" },
+  { key: "qualifications", label: "Qualifications", type: "text" },
+  { key: "yearsOfExperience", label: "Years of Experience", type: "number" },
+  { key: "contactNumber", label: "Contact Number", type: "text" },
+  { key: "clinicName", label: "Clinic/Hospital Name", type: "text" },
+  { key: "clinicAddress", label: "Clinic/Hospital Address", type: "text" },
+  { key: "registrationNumber", label: "Registration Number", type: "text" },
+  { key: "gender", label: "Gender", type: "select", options: ["Male", "Female", "Other"] },
+  { key: "languages", label: "Languages Spoken (comma separated)", type: "text" },
+  { key: "linkedIn", label: "LinkedIn/Profile Link", type: "text" },
+  { key: "awards", label: "Awards/Recognitions", type: "textarea" },
+  { key: "services", label: "Services Offered", type: "textarea" },
+  { key: "description", label: "Description", type: "textarea" },
+  { key: "consultationFees", label: "Consultation Fee (₹)", type: "number" },
+];
 
 const CreateListing = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    specialty: '',
-    description: '',
-    consultationFees: '',
-  });
-  const [imageFile, setImageFile] = useState(null);
-  const [message, setMessage] = useState('');
+  const [user, setUser] = useState(null);
+  const [doctor, setDoctor] = useState(null);
+  const [form, setForm] = useState({});
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(defaultAvatar);
+  const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
+  const fileInputRef = useRef();
+
+  // Fetch user and doctor profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // Get user info (name, email)
+        const userRes = await axios.get("/api/auth/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(userRes.data);
+
+        // Get doctor profile
+        const docRes = await axios.get("/api/doctors/my-profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDoctor(docRes.data);
+        setForm({
+          ...docRes.data,
+          name: docRes.data.name || userRes.data.name,
+          languages: docRes.data.languages ? docRes.data.languages.join(", ") : "",
+        });
+        setPhotoPreview(docRes.data.imageUrl || defaultAvatar);
+        setEditMode(false);
+      } catch (err) {
+        // If no profile, prefill name/email from user
+        try {
+          const token = localStorage.getItem("token");
+          const userRes = await axios.get("/api/auth/profile", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUser(userRes.data);
+          setForm({ name: userRes.data.name, email: userRes.data.email });
+          setPhotoPreview(defaultAvatar);
+          setEditMode(true);
+        } catch {
+          setError("Failed to fetch user info.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleImageChange = (e) => {
-    setImageFile(e.target.files[0]);
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    setPhotoFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoPreview(reader.result);
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleEdit = () => setEditMode(true);
 
-    if (!imageFile) {
-      setMessage('📸 Please upload a profile image of the doctor.');
+  const handleSave = async (e) => {
+    if (!form.name || !form.name.trim()) {
+      setError("Name is required.");
+      setLoading(false);
       return;
     }
-
+    if (
+      !form.name ||
+      !form.specialty ||
+      !form.description ||
+      !form.consultationFees ||
+      (!doctor && !photoFile) // For new profile, image is required
+    ) {
+      setError("Please fill all required fields and upload a profile photo.");
+      setLoading(false);
+      return;
+    }
+    e.preventDefault();
+    setMsg("");
+    setError("");
+    setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setMessage('🔐 You must be logged in to create a listing.');
-        return;
-      }
-
+      const token = localStorage.getItem("token");
       const data = new FormData();
-      data.append('name', formData.name);
-      data.append('specialty', formData.specialty);
-      data.append('description', formData.description);
-      data.append('consultationFees', formData.consultationFees);
-      data.append('image', imageFile);
 
-      const response = await fetch('http://localhost:5000/api/doctors/create-listing', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: data,
+      data.append("name", form.name || "");
+      doctorFields.forEach((field) => {
+        if (field.key === "languages") {      
+          data.append("languages", (form.languages || "").split(",").map(l => l.trim()).filter(Boolean));
+        } else if (field.key !== "image" && field.key !== "photo") {
+          data.append(field.key, form[field.key] || "");
+        }
       });
+      if (photoFile) data.append("image", photoFile);
 
-      const result = await response.json();
-
-      if (response.ok) {
-        setMessage('✅ Doctor listing created successfully!');
-        setFormData({ name: '', specialty: '', description: '', consultationFees: '' });
-        setImageFile(null);
-      } else {
-        setMessage(result.message || '❌ Failed to create listing.');
+      for (let pair of data.entries()) {
+        console.log("FORMDATA:", pair[0], pair[1]);
       }
-    } catch (error) {
-      console.error('Error creating listing:', error);
-      setMessage('⚠️ An unexpected error occurred. Please try again.');
+
+      // If doctor profile exists, update; else, create
+      let res;
+      try {
+        res = await axios.put("/api/doctors/my-profile", data, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMsg("Profile updated successfully!");
+      } catch (err) {
+        // If not found, create new
+        res = await axios.post("/api/doctors/create-listing", data, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMsg("Profile created successfully!");
+      }
+      setDoctor(res.data);
+      setForm({
+        ...res.data,
+        languages: res.data.languages ? res.data.languages.join(", ") : "",
+      });
+      setPhotoPreview(res.data.imageUrl || photoPreview);
+      setEditMode(false);
+      setPhotoFile(null);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save profile.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-600">
+        <span className="text-2xl text-white animate-pulse">Loading...</span>
+      </div>
+    );
+
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-950 via-black to-purple-900 flex items-center justify-center px-4 py-16">
-      <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl max-w-2xl w-full p-10 text-white">
-        <h1 className="text-4xl font-bold text-center text-cyan-300 drop-shadow mb-6">
-          🏥 Add a Doctor to HealthCard
-        </h1>
-        <p className="text-center text-sm text-purple-200 mb-10">
-          Boost your care team visibility. Add trusted professionals to your network today!
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-600 px-4 py-16">
+      <div className="bg-white/90 rounded-3xl shadow-2xl p-10 max-w-2xl w-full flex flex-col items-center">
+        {/* Profile Photo */}
+        <div className="relative mb-6">
+          <img
+            src={photoPreview || defaultAvatar}
+            alt="Doctor"
+            className="w-40 h-40 rounded-full border-4 border-indigo-400 shadow-lg object-cover bg-white"
+          />
+          {editMode && (
+            <button
+              type="button"
+              className="absolute bottom-2 right-2 bg-indigo-600 text-white rounded-full p-2 shadow-lg hover:bg-indigo-800 transition"
+              onClick={() => fileInputRef.current.click()}
+              title="Change Photo"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13h6m2 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          )}
           <input
-            type="text"
-            name="name"
-            placeholder="Full Name of the Doctor"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full p-4 rounded-xl bg-white/10 placeholder-purple-300 text-white focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
-            required
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handlePhotoChange}
           />
+        </div>
 
-          <input
-            type="text"
-            name="specialty"
-            placeholder="Medical Specialty (e.g., Cardiologist)"
-            value={formData.specialty}
-            onChange={handleChange}
-            className="w-full p-4 rounded-xl bg-white/10 placeholder-purple-300 text-white focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
-            required
-          />
+        <div className="flex flex-col items-start">
+  <label className="text-indigo-700 font-semibold mb-1">Name:</label>
+  {editMode ? (
+    <input
+      type="text"
+      name="name"
+      value={form.name || ""}
+      onChange={handleChange}
+      className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
+      required
+    />
+  ) : (
+    <div className="bg-indigo-50 rounded-lg px-3 py-2 text-gray-700 shadow-inner min-h-[40px] w-full">
+      {doctor && doctor.name ? doctor.name : <span className="text-gray-400">Not set</span>}
+    </div>
+  )}
+</div>
 
-          <textarea
-            name="description"
-            placeholder="Brief professional background or patient care philosophy"
-            value={formData.description}
-            onChange={handleChange}
-            rows={4}
-            className="w-full p-4 rounded-xl bg-white/10 placeholder-purple-300 text-white focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-teal-500 transition resize-none"
-            required
-          />
 
-          <input
-            type="number"
-            name="consultationFees"
-            placeholder="Consultation Fee (USD)"
-            value={formData.consultationFees}
-            onChange={handleChange}
-            className="w-full p-4 rounded-xl bg-white/10 placeholder-purple-300 text-white focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
-            required
-            min="0"
-            step="0.01"
-          />
+        {/* Name, Email (non-editable) */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-extrabold text-indigo-700 mb-2">{user?.name}</h2>
+          <p className="text-gray-600 font-medium">{user?.email}</p>
+          <span className="inline-block mt-2 px-4 py-1 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm shadow">
+            Doctor
+          </span>
+        </div>
 
-          <div>
-            <label className="block mb-2 font-semibold text-cyan-400">
-              Upload Doctor's Profile Picture
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              required
-              className="text-purple-200"
-            />
+        {/* Profile Details */}
+        <form onSubmit={handleSave} className="w-full">
+          <div className="grid grid-cols-1 gap-5">
+            {doctorFields.map((field) => (
+              <div key={field.key} className="flex flex-col items-start">
+                <label className="text-indigo-700 font-semibold mb-1">{field.label}:</label>
+                {editMode ? (
+                  field.type === "select" ? (
+                    <select
+                      name={field.key}
+                      value={form[field.key] || ""}
+                      onChange={handleChange}
+                      className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
+                    >
+                      <option value="">Select</option>
+                      {field.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : field.type === "textarea" ? (
+                    <textarea
+                      name={field.key}
+                      value={form[field.key] || ""}
+                      onChange={handleChange}
+                      className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
+                    />
+                  ) : (
+                    <input
+                      type={field.type}
+                      name={field.key}
+                      value={form[field.key] || ""}
+                      onChange={handleChange}
+                      className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
+                    />
+                  )
+                ) : (
+                  <div className="bg-indigo-50 rounded-lg px-3 py-2 text-gray-700 shadow-inner min-h-[40px] w-full">
+                    {field.key === "languages"
+                      ? (doctor && doctor.languages && doctor.languages.length
+                          ? doctor.languages.join(", ")
+                          : <span className="text-gray-400">Not set</span>)
+                      : doctor && doctor[field.key]
+                        ? doctor[field.key]
+                        : <span className="text-gray-400">Not set</span>
+                    }
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 transition py-4 rounded-xl font-bold text-lg shadow-lg shadow-cyan-500/40"
-          >
-            ➕ Create Listing
-          </button>
+          {/* Action Buttons */}
+          <div className="flex justify-center gap-4 items-center mt-10">
+            {!editMode ? (
+              <button
+                type="button"
+                onClick={handleEdit}
+                className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-300"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <>
+                <button
+                  type="submit"
+                  className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-700 text-white font-bold rounded-xl shadow-lg hover:from-green-600 hover:to-green-800 transition-all duration-300"
+                >
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditMode(false);
+                    setForm(doctor || {});
+                    setPhotoFile(null);
+                    setPhotoPreview(doctor?.imageUrl || defaultAvatar);
+                  }}
+                  className="px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white font-bold rounded-xl shadow-lg hover:from-gray-500 hover:to-gray-700 transition-all duration-300"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+          {msg && <div className="text-green-600 font-semibold text-center mt-4">{msg}</div>}
+          {error && <div className="text-red-600 font-semibold text-center mt-4">{error}</div>}
         </form>
-
-        {message && (
-          <p className="mt-6 text-center text-yellow-300 font-medium animate-pulse">{message}</p>
-        )}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import {
   setAvailability,
   getAvailableDoctors,
   createDoctorListing,
-getScheduledAppointments,
+  getScheduledAppointments,
   getPatientHistory,
   updateAppointmentStatus
   
@@ -17,6 +17,10 @@ getScheduledAppointments,
 } from "../controllers/doctorController.js";
 import { verifyDoctor, authenticate } from "../middlewares/authMiddleware.js";
 import parser from "../middlewares/multerCloudinary.js";
+import { getMyProfile } from "../controllers/doctorController.js";
+import { updateDoctorProfile } from "../controllers/doctorController.js";
+import { updatePatientProfile } from "../controllers/patientController.js";
+
 
 
 const router = express.Router();
@@ -36,5 +40,8 @@ router.get("/scheduled-appointments",authenticate,verifyDoctor,getScheduledAppoi
 router.get('/patient-history/:patientId', authenticate, getPatientHistory);
 router.patch('/appointments/:apptId/status', authenticate, updateAppointmentStatus);
 
+router.get("/my-profile", authenticate, getMyProfile);
 
+router.put("/my-profile", authenticate, parser.single("image"), updateDoctorProfile);
+router.put("/profile", authenticate, parser.single("photo"), updatePatientProfile);
 export default router;
