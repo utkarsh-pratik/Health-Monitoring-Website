@@ -12,6 +12,7 @@ import About from "./pages/About";
 import DoctorHome from "./pages/doctorHome";
 import PatientHome from "./pages/patientHome";
 import Favorite from "./pages/Favorites";
+import Profile from "./pages/Profile";
 
 import DoctorLayout from "./layouts/DoctorLayout";
 import PatientLayout from "./layouts/PatientLayout";
@@ -44,13 +45,9 @@ const AppRoutes = () => {
       {/* Doctor routes with DoctorLayout */}
       <Route path="/doctor" element={<DoctorLayout />}>
         <Route path="home" element={<DoctorHome />} />
-        <Route path="profile" element={<DoctorProfile doctorId="doctor123" />} />
         <Route path="scheduled-appointments" element={<ScheduledAppointment />}/>  
-        <Route path="/doctor/patienthistory/:id" element={<PatientHistory />} />
-       
+        <Route path="/doctor/patienthistory/:id" element={<PatientHistory />} />       
         <Route path="set-availability" element={<ProfileSettings />} />
-
-        
 
         <Route path="about" element={<About />} />
         <Route path="create-listing" element={<CreateListing />} />
@@ -72,6 +69,7 @@ const AppRoutes = () => {
       {/* Auth and other routes without layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/profile" element={<Profile />} />
   
       
 

@@ -70,6 +70,17 @@ const doctorSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  qualifications: { type: String, trim: true },
+  yearsOfExperience: { type: Number, min: 0 },
+  contactNumber: { type: String, trim: true },
+  clinicName: { type: String, trim: true },
+  clinicAddress: { type: String, trim: true },
+  registrationNumber: { type: String, trim: true },
+  gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+  languages: [{ type: String, trim: true }],
+  linkedIn: { type: String, trim: true },
+  awards: { type: String, trim: true },
+  services: { type: String, trim: true },
   appointments: [appointmentSchema], // Appointments now include patientRef
   availability: [timeSlotSchema],    // Availability field
   createdAt: {

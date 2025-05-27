@@ -6,6 +6,11 @@ import { Link } from 'react-router-dom';
 const DoctorHome = () => {
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/login";
+  };
+
   return (
     <nav
       className="
@@ -65,6 +70,12 @@ const DoctorHome = () => {
 
           {/* Profile Dropdown */}
           <ProfileDropdown />
+          <button
+            onClick={handleLogout}
+            className="nav-link hover:text-red-400 font-semibold ml-4"
+          >
+            ⏻ Logout
+          </button>
         </div>
       </div>
 

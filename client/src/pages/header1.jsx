@@ -78,6 +78,11 @@ const PatientHome = () => {
     return count > 9 ? "9+" : count;
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/login";
+  };
+
   return (
     <nav
       className="bg-gray-800 text-white shadow-md fixed top-0 w-full z-50 transition-all duration-300"
@@ -110,7 +115,7 @@ const PatientHome = () => {
             Book Appointment
           </Link>
           <Link
-            to="/patient/home"
+            to="/profile"
             className="hover:text-white transition duration-200"
             aria-current={location.pathname === "/patient/home" ? "page" : undefined}
           >
@@ -127,7 +132,12 @@ const PatientHome = () => {
 
           <DashboardDropdown />
 
-       
+          <button
+            onClick={handleLogout}
+            className="hover:text-red-400 transition duration-200 font-semibold ml-4"
+          >
+            Logout
+          </button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -174,17 +184,19 @@ const PatientHome = () => {
           >
             Profile
           </Link>
-          <Link
-            to="/logout"
-            className="block text-red-400 hover:text-red-300"
-            onClick={() => setMenuOpen(false)}
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              handleLogout();
+            }}
+            className="block text-red-400 hover:text-red-300 font-semibold w-full text-left"
             role="menuitem"
           >
-            Logout
-          </Link>
+           ⏻ Logout
+          </button>
         </div>
       )}
-
+      
      
     </nav>
   );
