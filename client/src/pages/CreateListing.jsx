@@ -4,7 +4,6 @@ import axios from "axios";
 
 const defaultAvatar = "https://api.dicebear.com/7.x/adventurer/svg?seed=doctor";
 
-
 // All doctor profile fields
 const doctorFields = [
   { key: "specialty", label: "Specialty", type: "text" },
@@ -96,6 +95,7 @@ const CreateListing = () => {
   const handleEdit = () => setEditMode(true);
 
   const handleSave = async (e) => {
+    e.preventDefault();
     if (!form.name || !form.name.trim()) {
       setError("Name is required.");
       setLoading(false);
@@ -112,7 +112,6 @@ const CreateListing = () => {
       setLoading(false);
       return;
     }
-    e.preventDefault();
     setMsg("");
     setError("");
     setLoading(true);
@@ -122,17 +121,13 @@ const CreateListing = () => {
 
       data.append("name", form.name || "");
       doctorFields.forEach((field) => {
-        if (field.key === "languages") {      
+        if (field.key === "languages") {
           data.append("languages", (form.languages || "").split(",").map(l => l.trim()).filter(Boolean));
         } else if (field.key !== "image" && field.key !== "photo") {
           data.append(field.key, form[field.key] || "");
         }
       });
       if (photoFile) data.append("image", photoFile);
-
-      for (let pair of data.entries()) {
-        console.log("FORMDATA:", pair[0], pair[1]);
-      }
 
       // If doctor profile exists, update; else, create
       let res;
@@ -201,24 +196,23 @@ const CreateListing = () => {
           />
         </div>
 
-        <div className="flex flex-col items-start">
-  <label className="text-indigo-700 font-semibold mb-1">Name:</label>
-  {editMode ? (
-    <input
-      type="text"
-      name="name"
-      value={form.name || ""}
-      onChange={handleChange}
-      className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
-      required
-    />
-  ) : (
-    <div className="bg-indigo-50 rounded-lg px-3 py-2 text-gray-700 shadow-inner min-h-[40px] w-full">
-      {doctor && doctor.name ? doctor.name : <span className="text-gray-400">Not set</span>}
-    </div>
-  )}
-</div>
-
+        <div className="flex flex-col items-start w-full">
+          <label className="text-indigo-700 font-semibold mb-1">Name:</label>
+          {editMode ? (
+            <input
+              type="text"
+              name="name"
+              value={form.name || ""}
+              onChange={handleChange}
+              className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
+              required
+            />
+          ) : (
+            <div className="bg-indigo-50 rounded-lg px-3 py-2 text-gray-700 shadow-inner min-h-[40px] w-full">
+              {doctor && doctor.name ? doctor.name : <span className="text-gray-400">Not set</span>}
+            </div>
+          )}
+        </div>
 
         {/* Name, Email (non-editable) */}
         <div className="text-center mb-8">
@@ -230,13 +224,13 @@ const CreateListing = () => {
         </div>
 
         {/* Profile Details */}
-        <form onSubmit={handleSave} className="w-full">
-          <div className="grid grid-cols-1 gap-5">
-            {doctorFields.map((field) => (
-              <div key={field.key} className="flex flex-col items-start">
-                <label className="text-indigo-700 font-semibold mb-1">{field.label}:</label>
-                {editMode ? (
-                  field.type === "select" ? (
+        {editMode ? (
+          <form onSubmit={handleSave} className="w-full">
+            <div className="grid grid-cols-1 gap-5">
+              {doctorFields.map((field) => (
+                <div key={field.key} className="flex flex-col items-start">
+                  <label className="text-indigo-700 font-semibold mb-1">{field.label}:</label>
+                  {field.type === "select" ? (
                     <select
                       name={field.key}
                       value={form[field.key] || ""}
@@ -263,8 +257,40 @@ const CreateListing = () => {
                       onChange={handleChange}
                       className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
                     />
-                  )
-                ) : (
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-4 items-center mt-10">
+              <button
+                type="submit"
+                className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-700 text-white font-bold rounded-xl shadow-lg hover:from-green-600 hover:to-green-800 transition-all duration-300"
+              >
+                Save Changes
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditMode(false);
+                  setForm(doctor || {});
+                  setPhotoFile(null);
+                  setPhotoPreview(doctor?.imageUrl || defaultAvatar);
+                }}
+                className="px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white font-bold rounded-xl shadow-lg hover:from-gray-500 hover:to-gray-700 transition-all duration-300"
+              >
+                Cancel
+              </button>
+            </div>
+            {msg && <div className="text-green-600 font-semibold text-center mt-4">{msg}</div>}
+            {error && <div className="text-red-600 font-semibold text-center mt-4">{error}</div>}
+          </form>
+        ) : (
+          <div className="w-full">
+            <div className="grid grid-cols-1 gap-5">
+              {doctorFields.map((field) => (
+                <div key={field.key} className="flex flex-col items-start">
+                  <label className="text-indigo-700 font-semibold mb-1">{field.label}:</label>
                   <div className="bg-indigo-50 rounded-lg px-3 py-2 text-gray-700 shadow-inner min-h-[40px] w-full">
                     {field.key === "languages"
                       ? (doctor && doctor.languages && doctor.languages.length
@@ -275,14 +301,11 @@ const CreateListing = () => {
                         : <span className="text-gray-400">Not set</span>
                     }
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-center gap-4 items-center mt-10">
-            {!editMode ? (
+                </div>
+              ))}
+            </div>
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-4 items-center mt-10">
               <button
                 type="button"
                 onClick={handleEdit}
@@ -290,32 +313,11 @@ const CreateListing = () => {
               >
                 Edit Profile
               </button>
-            ) : (
-              <>
-                <button
-                  type="submit"
-                  className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-700 text-white font-bold rounded-xl shadow-lg hover:from-green-600 hover:to-green-800 transition-all duration-300"
-                >
-                  Save Changes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditMode(false);
-                    setForm(doctor || {});
-                    setPhotoFile(null);
-                    setPhotoPreview(doctor?.imageUrl || defaultAvatar);
-                  }}
-                  className="px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white font-bold rounded-xl shadow-lg hover:from-gray-500 hover:to-gray-700 transition-all duration-300"
-                >
-                  Cancel
-                </button>
-              </>
-            )}
+            </div>
+            {msg && <div className="text-green-600 font-semibold text-center mt-4">{msg}</div>}
+            {error && <div className="text-red-600 font-semibold text-center mt-4">{error}</div>}
           </div>
-          {msg && <div className="text-green-600 font-semibold text-center mt-4">{msg}</div>}
-          {error && <div className="text-red-600 font-semibold text-center mt-4">{error}</div>}
-        </form>
+        )}
       </div>
     </div>
   );

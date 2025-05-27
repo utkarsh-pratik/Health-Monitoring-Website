@@ -1,5 +1,6 @@
 import Doctor from "../models/Doctor.js";
 import Patient from "../models/Patient.js";
+import User from "../models/User.js";
 
 // CREATE doctor profile (listing)
 export const createDoctorListing = async (req, res) => {
@@ -146,7 +147,37 @@ export const getAllDoctors = async (req, res) => {
 
 export const getAvailableDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.find(); // You can add filters as needed
+    const { name, specialty, maxFee, day, slotTime } = req.query;
+    const filter = {
+      availability: { $exists: true, $ne: [] } // Only doctors with at least one slot
+    };
+
+    if (name) {
+      filter.name = { $regex: name, $options: "i" };
+    }
+    if (specialty) {
+      filter.specialty = { $regex: specialty, $options: "i" };
+    }
+    if (maxFee) {
+      filter.consultationFees = { $lte: Number(maxFee) };
+    }
+    if (day) {
+      filter['availability.day'] = day;
+    }
+
+    let doctors = await Doctor.find(filter);
+
+    // Further filter by slotTime if provided
+    if (slotTime && day) {
+      doctors = doctors.filter(doc => {
+        const daySlot = doc.availability.find(d => d.day === day);
+        if (!daySlot) return false;
+        return daySlot.slots.some(slot =>
+          slot.start <= slotTime && slot.end > slotTime
+        );
+      });
+    }
+
     res.json(doctors);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -207,6 +238,44 @@ export const updateAppointmentStatus = async (req, res) => {
     await doctor.save();
 
     res.json({ message: "Appointment status updated", appointment });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// GET /api/doctors/:doctorId/slots?date=YYYY-MM-DD
+export const getDoctorSlotsForDate = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const { date } = req.query; // e.g., "2024-06-10"
+    if (!date) return res.status(400).json({ message: "Date is required" });
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+
+    // Get weekday name from date
+    const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+
+    // Find slots for that day
+    const daySlot = doctor.availability.find(d => d.day === dayName);
+    const slots = daySlot ? daySlot.slots : [];
+
+    // Find booked slots for that date
+    const booked = doctor.appointments
+      .filter(appt => {
+        const apptDate = new Date(appt.appointmentTime);
+        return (
+          apptDate.toISOString().slice(0, 10) === date &&
+          appt.status !== 'Cancelled' && appt.status !== 'Rejected'
+        );
+      })
+      .map(appt => {
+        // Extract start time in "HH:MM" (24h) format
+        const apptTime = new Date(appt.appointmentTime);
+        return apptTime.toTimeString().slice(0, 5);
+      });
+
+    res.json({ slots, booked });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

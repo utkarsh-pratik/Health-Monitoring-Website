@@ -5,7 +5,8 @@ import {
   createDoctorListing,
   getScheduledAppointments,
   getPatientHistory,
-  updateAppointmentStatus
+  updateAppointmentStatus,
+  //getUpcomingBookedSlots
   
   //tCreateDoctorListing//nt this for /create-listing
   //tGetAvailableDoctors//nt this for /available
@@ -20,6 +21,7 @@ import parser from "../middlewares/multerCloudinary.js";
 import { getMyProfile } from "../controllers/doctorController.js";
 import { updateDoctorProfile } from "../controllers/doctorController.js";
 import { updatePatientProfile } from "../controllers/patientController.js";
+import { getDoctorSlotsForDate } from "../controllers/doctorController.js";
 
 
 
@@ -44,4 +46,9 @@ router.get("/my-profile", authenticate, getMyProfile);
 
 router.put("/my-profile", authenticate, parser.single("image"), updateDoctorProfile);
 router.put("/profile", authenticate, parser.single("photo"), updatePatientProfile);
+
+router.get("/:doctorId/slots", getDoctorSlotsForDate);
+
+//router.get("/upcoming-booked-slots", authenticate, verifyDoctor, getUpcomingBookedSlots);
+
 export default router;
