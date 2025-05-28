@@ -32,9 +32,9 @@ const PatientHome = () => {
         <Link to="/patient/appointments"className="px-6 py-3 bg-indigo-700 hover:bg-indigo-800 transition text-white rounded-xl font-semibold shadow-lg">
               📅 Book Appointment
             </Link>
-            <button className="px-6 py-3 bg-pink-600 hover:bg-pink-700 transition text-white rounded-xl font-semibold shadow-lg">
+            <Link to="/patient/analyze-report" className="px-6 py-3 bg-pink-600 hover:bg-pink-700 transition text-white rounded-xl font-semibold shadow-lg">
               🔍 Analyze report
-            </button>
+            </Link>
             
           </div>
         </div>

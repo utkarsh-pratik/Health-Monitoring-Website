@@ -2,9 +2,14 @@ import Doctor from "../models/Doctor.js";
 import Patient from "../models/Patient.js"; // Assuming you have a Patient model
 //port AppointMent from "../models/Appointment.js"; // Assuming you have an Appointment model
 import User from '../models/User.js';
-
+import path from "path";
+import { exec } from "child_process";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 // controllers/appointmentController.js
 // POST /api/patient/book-appointment/:doctorId
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 
 export const bookAppointment = async (req, res) => {
@@ -332,3 +337,61 @@ if (!allowedGenders.includes(updates.gender)) {
   if (!patient) return res.status(404).json({ message: "Patient not found" });
   res.json(patient);
 };
+
+// import path from "path";
+// import { exec } from "child_process";
+// import { fileURLToPath } from "url";
+// import { dirname } from "path";
+
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
+// import path from "path";
+// import { exec } from "child_process";
+
+
+
+export const analyzeReport = (req, res) => {
+  console.log("📥 Analyze report triggered");
+  console.log("📄 Uploaded file info:", req.file);
+
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const filePath = path.resolve(req.file.path);
+  const scriptPath = path.resolve(__dirname, "../ml/model_predictor.py");
+
+  console.log("📂 Resolved file path:", filePath);
+
+  // Wrap paths in quotes to support spaces in paths
+  const command = `python3 "${scriptPath}" "${filePath}"`;
+
+  exec(command, (err, stdout, stderr) => {
+    if (stderr) {
+      console.error("⚠️ Python stderr:", stderr);
+    }
+
+    console.log("🐍 Raw Python output:", stdout);
+
+    if (err) {
+      console.error("❌ Exec error:", err);
+      return res.status(500).json({
+        error: "Failed to analyze report",
+        details: stdout || stderr || err.message,
+      });
+    }
+
+    try {
+      const result = JSON.parse(stdout);
+      console.log("✅ Parsed result:", result);
+      return res.json(result);
+    } catch (parseError) {
+      console.error("❌ JSON parse error:", parseError.message);
+      return res.status(500).json({
+        error: "Invalid response from Python script",
+        rawOutput: stdout,
+      });
+    }
+  });
+};
+

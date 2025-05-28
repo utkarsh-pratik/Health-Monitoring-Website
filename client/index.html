@@ -1,24 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sarthak</title>
-    
-    <!-- ChatLink Bot Configuration -->
-    <script>
-      window.chtlConfig = { chatbotId: "4553592449" };
-    </script>
-    <script
-      async
-      data-id="4553592449"
-      id="chtl-script"
-      type="text/javascript"
-      src="https://chatling.ai/js/embed.js"
-    ></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sarthak</title>
+
+  <!-- ChatLink Bot Configuration -->
+  <script>
+    window.chtlConfig = { chatbotId: "4553592449" };
+  </script>
+  <script
+    async
+    data-id="4553592449"
+    id="chtl-script"
+    type="text/javascript"
+    src="https://chatling.ai/js/embed.js"
+  ></script>
+
+  <style>
+    /* Pulse scale animation for the bot widget */
+    @keyframes pulseScale {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    /* Animate bot widget continuously when .bot-pulse class on body */
+    body.bot-pulse .chtl-widget {
+      animation: pulseScale 2s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    /* Style for the bot message shown on mild/low severity */
+    #bot-message {
+      position: fixed;
+      bottom: 120px; /* above the bot widget */
+      right: 20px;
+      background: rgba(255 255 255 / 0.9);
+      padding: 10px 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-weight: bold;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #4a148c; /* dark violet */
+      z-index: 9999;
+      user-select: none;
+    }
+  </style>
+
+  <script>
+    // Listen for a custom event to toggle bot animation class on body
+    window.addEventListener('toggleBotPulse', (e) => {
+      if (e.detail === true) {
+        document.body.classList.add('bot-pulse');
+      } else {
+        document.body.classList.remove('bot-pulse');
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
 </html>

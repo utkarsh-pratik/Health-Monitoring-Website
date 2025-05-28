@@ -20,6 +20,7 @@ import UpcomingAppointments from "./pages/UpcomingAppointments";
 import PatientDashboard from "./components/patientDashboard";
 import ScheduledAppointment from "./pages/scheduledAppointments";
 import PatientHistory from "./pages/PatientHistory";
+import Analyze from "./pages/Analyze";
 import { useState, useEffect } from "react";
 
 
@@ -60,6 +61,7 @@ const AppRoutes = () => {
         <Route path="appointments" element={<BookAppointment />} />
         
         <Route  path="post-history" element={<PatientDashboard />} />
+        <Route path="analyze-report" element={<Analyze />} />
         <Route path="favorites" element={<Favorite />} />
         <Route path="about" element={<About />} />
          <Route path="appointments/upcoming" element={<UpcomingAppointments />} />
