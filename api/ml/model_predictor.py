@@ -17,10 +17,10 @@ import traceback
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # === Configurations ===
-POPPLER_PATH = r"C:\poppler-24.08.0\Library\bin"
+POPPLER_PATH = r"C:\Users\utkar\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin"
 TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-MODEL_PATH = r"C:\Users\sarthak\OneDrive\Desktop\sarthakkartesummertraining\summer_training-\api\rf_model.joblib"
-LABEL_ENCODER_PATH = r"C:\Users\sarthak\OneDrive\Desktop\sarthakkartesummertraining\summer_training-\api\label_encoder.joblib"
+MODEL_PATH = r"C:\Users\utkar\Downloads\proj\New folder\summer_training-\api\rf_model.joblib"
+LABEL_ENCODER_PATH = r"C:\Users\utkar\Downloads\proj\New folder\summer_training-\api\label_encoder.joblib"
 
 # Configure pytesseract
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
