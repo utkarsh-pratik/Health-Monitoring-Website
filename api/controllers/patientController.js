@@ -34,6 +34,25 @@ export const bookAppointment = async (req, res) => {
 
     await doctor.save();
 
+    // --- Socket.IO Notification to Doctor ---
+    const io = req.app.get("io");
+    const doctorSockets = req.app.get("doctorSockets");
+    const doctorSocketIds = doctorSockets[doctorId];
+    console.log('[NOTIFY] doctorId:', doctorId, 'doctorSocketIds:', doctorSocketIds);
+    if (doctorSocketIds && doctorSocketIds.length > 0) {
+      doctorSocketIds.forEach(socketId => {
+        io.to(socketId).emit("newAppointment", {
+          patientName,
+          appointmentTime: new Date(appointmentTime),
+          reason,
+        });
+      });
+      console.log('[NOTIFY] Emitted newAppointment to doctor', doctorId);
+    } else {
+      console.log('[NOTIFY] No socketId found for doctor', doctorId);
+    }
+    // --- End Notification ---
+
     res.status(201).json({ message: 'Appointment booked successfully' });
   } catch (err) {
     console.error('Booking error:', err);
@@ -45,7 +64,7 @@ export const bookAppointment = async (req, res) => {
 // GET /api/appointments/upcoming
 //nst Appointment = require('../models/Doctor'); // or wherever you have doctor model
 
-// Get patient’s appointments
+// Get patient's appointments
 
 
 export const getMyAppointments = async (req, res) => {

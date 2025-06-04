@@ -18,6 +18,13 @@ const Login = () => {
             const res = await axios.post("http://localhost:5000/api/auth/login", { email, password,});
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("role", res.data.user.role);
+            if (res.data.user.role === "doctor" && res.data.user.doctorId) {
+                localStorage.setItem("doctorId", res.data.user.doctorId);
+                console.log("[LOGIN] Set doctorId in localStorage:", res.data.user.doctorId);
+            }
+            if (res.data.user.role === "patient" && res.data.user._id) {
+                localStorage.setItem("patientId", res.data.user._id);
+            }
 
             if (res.data.user.role === "patient") {
                 navigate("/patient/home");

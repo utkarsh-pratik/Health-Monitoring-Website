@@ -81,12 +81,21 @@ export const login = async (req, res) => {
       { expiresIn: "1h" }
     );
 
+    let doctorId = null;
+    if (user.role.toLowerCase() === "doctor") {
+      // Find the Doctor document for this user
+      const Doctor = (await import("../models/Doctor.js")).default;
+      const doctorDoc = await Doctor.findOne({ userRef: user._id });
+      if (doctorDoc) doctorId = doctorDoc._id;
+    }
+
     res.json({
       token,
       user: {
         _id: user._id,
         email: user.email,
         role: user.role.toLowerCase(), // 👈 this is critical
+        doctorId, // Will be null for non-doctors
       }
     });
   } catch (error) {

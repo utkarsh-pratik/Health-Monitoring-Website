@@ -13,6 +13,8 @@ import DoctorHome from "./pages/doctorHome";
 import PatientHome from "./pages/patientHome";
 import Favorite from "./pages/Favorites";
 import Profile from "./pages/Profile";
+import DoctorNotifications from "./pages/DoctorNotifications";
+import PatientNotifications from "./pages/PatientNotifications";
 
 import DoctorLayout from "./layouts/DoctorLayout";
 import PatientLayout from "./layouts/PatientLayout";
@@ -49,10 +51,9 @@ const AppRoutes = () => {
         <Route path="scheduled-appointments" element={<ScheduledAppointment />}/>  
         <Route path="/doctor/patienthistory/:id" element={<PatientHistory />} />       
         <Route path="set-availability" element={<ProfileSettings />} />
-
+        <Route path="notifications" element={<DoctorNotifications />} />
         <Route path="about" element={<About />} />
         <Route path="create-listing" element={<CreateListing />} />
-
       </Route>
 
       {/* Patient routes with PatientLayout */}
@@ -65,6 +66,7 @@ const AppRoutes = () => {
         <Route path="favorites" element={<Favorite />} />
         <Route path="about" element={<About />} />
          <Route path="appointments/upcoming" element={<UpcomingAppointments />} />
+        <Route path="notifications" element={<PatientNotifications />} />
 
       </Route>
 

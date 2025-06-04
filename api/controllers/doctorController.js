@@ -237,6 +237,21 @@ export const updateAppointmentStatus = async (req, res) => {
     if (reason) appointment.reason = reason;
     await doctor.save();
 
+    // --- Socket.IO Notification to Patient ---
+    const io = req.app.get("io");
+    const patientSockets = req.app.get("patientSockets");
+    const patientId = appointment.patientRef?.toString();
+    const patientSocketId = patientSockets[patientId];
+    if (patientSocketId) {
+      io.to(patientSocketId).emit("appointmentStatus", {
+        status: appointment.status,
+        reason: appointment.reason,
+        doctorName: doctor.name,
+        appointmentTime: appointment.appointmentTime,
+      });
+    }
+    // --- End Notification ---
+
     res.json({ message: "Appointment status updated", appointment });
   } catch (error) {
     res.status(500).json({ message: "Server error" });

@@ -1,10 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../components/ProfileDropdown';
 import { Link } from 'react-router-dom';
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
 
 const DoctorHome = () => {
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('doctorNotifications');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Save notifications to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('doctorNotifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    // Request notification permission
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    // Register doctor socket connection
+    const doctorId = localStorage.getItem('doctorId');
+    console.log('[SOCKET] Registering doctor socket with ID:', doctorId);
+    if (doctorId) {
+      socket.emit('registerDoctor', doctorId);
+    }
+
+    // Listen for new appointments
+    socket.on('newAppointment', (data) => {
+      const newNotification = {
+        id: Date.now(),
+        type: 'appointment',
+        patientName: data.patientName,
+        appointmentTime: data.appointmentTime,
+        reason: data.reason,
+        time: new Date().toLocaleTimeString(),
+        read: false
+      };
+      // Always read latest from localStorage
+      const saved = localStorage.getItem('doctorNotifications');
+      const current = saved ? JSON.parse(saved) : [];
+      const updated = [newNotification, ...current];
+      setNotifications(updated);
+      localStorage.setItem('doctorNotifications', JSON.stringify(updated));
+
+      // Show browser notification if permission granted
+      if (Notification.permission === "granted") {
+        new Notification("New Appointment Request", {
+          body: `${data.patientName} has requested an appointment`,
+          icon: "/icons/appointment-success.png"
+        });
+      }
+    });
+
+    return () => {
+      socket.off('newAppointment');
+    };
+  }, []);
+
+  // Notification indicator logic
+  const hasUnread = notifications.some(n => !n.read);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = () => {
     localStorage.clear();
@@ -33,7 +94,6 @@ const DoctorHome = () => {
           <span className="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-pink-500 to-red-400">
             Health Card
           </span>
-         
         </div>
 
         {/* Navigation Links */}
@@ -54,11 +114,15 @@ const DoctorHome = () => {
           </Link>
           <Link
             to="/doctor/notifications"
-            className="nav-link flex items-center gap-1"
+            className="nav-link flex items-center gap-1 relative"
             aria-label="Notifications and Reminders"
           >
             🔔 Notifications
-            <span className="ml-1 text-yellow-400 animate-bounce">🟡</span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 shadow animate-bounce" style={{minWidth:'1.5em',textAlign:'center'}}>
+                {unreadCount}
+              </span>
+            )}
           </Link>
           <Link
             to="/doctor/about"

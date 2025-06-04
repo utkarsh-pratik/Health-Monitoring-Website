@@ -1,45 +1,18 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import DashboardDropdown from "../components/dashboardDropdown";
+import { io } from 'socket.io-client';
 
+const socket = io('http://localhost:5000');
 
 const PatientHome = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      message: "Appointment booked successfully!",
-      type: "success",
-      time: new Date().toLocaleTimeString(),
-    },
-    {
-      id: 2,
-      message: "New doctor added to the system.",
-      type: "info",
-      time: new Date().toLocaleTimeString(),
-    },
-    {
-      id: 3,
-      message: "Appointment slot almost full!",
-      type: "warning",
-      time: new Date().toLocaleTimeString(),
-    },
-  ]);
-
-  const notifRef = useRef();
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('patientNotifications');
+    return saved ? JSON.parse(saved) : [];
+  });
   const location = useLocation();
-
-  // Close notification dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setNotifOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const navigate = useNavigate();
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -53,30 +26,61 @@ const PatientHome = () => {
     }
   }, []);
 
-  // Function to add new notifications dynamically
-  const addNotification = (message, type = "info") => {
-    const newNotif = {
-      id: Date.now(),
-      message,
-      type,
-      time: new Date().toLocaleTimeString(),
-    };
-    setNotifications((prev) => [newNotif, ...prev]);
+  // Save notifications to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('patientNotifications', JSON.stringify(notifications));
+  }, [notifications]);
 
-    // Optionally trigger browser notification
-    if (Notification.permission === "granted") {
-      new Notification("New Notification", {
-        body: message,
-        icon: "/icons/appointment-success.png",
-      });
+  // Socket connection for notifications
+  useEffect(() => {
+    const patientId = localStorage.getItem('patientId');
+    if (patientId) {
+      socket.emit('registerPatient', patientId);
     }
-  };
 
-  // Helper to display notification count capped at 9+
-  const notifCountDisplay = () => {
-    const count = notifications.length;
-    return count > 9 ? "9+" : count;
-  };
+    socket.on('appointmentStatus', (data) => {
+      let message = data.message || '';
+      if (!message) {
+        if (data.status === 'Confirmed') {
+          message = `Your appointment with Dr. ${data.doctorName} has been accepted`;
+        } else if (data.status === 'Cancelled' || data.status === 'Rejected') {
+          message = `Your appointment with Dr. ${data.doctorName} was ${data.status.toLowerCase()}`;
+        } else {
+          message = `Your appointment status was updated: ${data.status}`;
+        }
+      }
+
+      const newNotification = {
+        id: Date.now(),
+        type: 'status',
+        message,
+        status: data.status,
+        doctorName: data.doctorName,
+        appointmentTime: data.appointmentTime,
+        reason: data.reason,
+        time: new Date().toLocaleTimeString(),
+        read: false
+      };
+
+      setNotifications(prev => [newNotification, ...prev]);
+
+      // Show browser notification if permission granted
+      if (Notification.permission === "granted") {
+        new Notification("Appointment Update", {
+          body: message,
+          icon: data.status === 'Confirmed' ? "/icons/appointment-success.png" : "/icons/appointment-error.png"
+        });
+      }
+    });
+
+    return () => {
+      socket.off('appointmentStatus');
+    };
+  }, []);
+
+  // Notification indicator logic
+  const hasUnread = notifications.some(n => !n.read);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = () => {
     localStorage.clear();
@@ -128,6 +132,20 @@ const PatientHome = () => {
             aria-current={location.pathname === "/patient/appointments/upcoming" ? "page" : undefined}
           >
             Booked Appointments
+          </Link>
+
+          {/* Notification Link */}
+          <Link
+            to="/patient/notifications"
+            className="nav-link flex items-center gap-1 relative"
+            aria-label="Notifications and Reminders"
+          >
+            🔔 Notifications
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 shadow animate-bounce" style={{minWidth:'1.5em',textAlign:'center'}}>
+                {unreadCount}
+              </span>
+            )}
           </Link>
 
           <DashboardDropdown />
@@ -184,6 +202,19 @@ const PatientHome = () => {
           >
             Profile
           </Link>
+          <Link
+            to="/patient/notifications"
+            className="block text-gray-300 hover:text-white relative"
+            onClick={() => setMenuOpen(false)}
+            role="menuitem"
+          >
+            Notifications
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 shadow animate-bounce" style={{minWidth:'1.5em',textAlign:'center'}}>
+                {unreadCount}
+              </span>
+            )}
+          </Link>
           <button
             onClick={() => {
               setMenuOpen(false);
@@ -196,8 +227,6 @@ const PatientHome = () => {
           </button>
         </div>
       )}
-      
-     
     </nav>
   );
 };
