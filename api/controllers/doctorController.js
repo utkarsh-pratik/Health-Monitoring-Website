@@ -235,6 +235,13 @@ export const updateAppointmentStatus = async (req, res) => {
 
     appointment.status = status || appointment.status;
     if (reason) appointment.reason = reason;
+    
+    // If appointment is confirmed, set the amount and payment status
+    if (status === 'Confirmed') {
+      appointment.amount = doctor.consultationFees;
+      appointment.paymentStatus = 'Pending';
+    }
+    
     await doctor.save();
 
     // --- Socket.IO Notification to Patient ---
@@ -248,6 +255,8 @@ export const updateAppointmentStatus = async (req, res) => {
         reason: appointment.reason,
         doctorName: doctor.name,
         appointmentTime: appointment.appointmentTime,
+        paymentRequired: status === 'Confirmed',
+        amount: appointment.amount,
       });
     }
     // --- End Notification ---

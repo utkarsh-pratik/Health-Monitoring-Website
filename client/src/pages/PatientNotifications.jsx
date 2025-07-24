@@ -33,7 +33,9 @@ const PatientNotifications = () => {
       let message = data.message || '';
       if (!message) {
         if (data.status === 'Confirmed') {
-          message = `Your appointment with Dr. ${data.doctorName} has been accepted`;
+          message = data.paymentRequired 
+            ? `Your appointment with Dr. ${data.doctorName} has been confirmed. Please complete payment of ₹${data.amount}`
+            : `Your appointment with Dr. ${data.doctorName} has been confirmed`;
         } else if (data.status === 'Cancelled' || data.status === 'Rejected') {
           message = `Your appointment with Dr. ${data.doctorName} was ${data.status.toLowerCase()}`;
         } else {
@@ -49,6 +51,8 @@ const PatientNotifications = () => {
         doctorName: data.doctorName,
         appointmentTime: data.appointmentTime,
         reason: data.reason,
+        paymentRequired: data.paymentRequired,
+        amount: data.amount,
         time: new Date().toLocaleTimeString(),
         read: false
       };

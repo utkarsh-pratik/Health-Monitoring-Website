@@ -58,8 +58,37 @@ const DoctorHome = () => {
       }
     });
 
+    // Listen for payment notifications
+    socket.on('paymentReceived', (data) => {
+      const newNotification = {
+        id: Date.now(),
+        type: 'payment',
+        patientName: data.patientName,
+        amount: data.amount,
+        paymentId: data.paymentId,
+        appointmentId: data.appointmentId,
+        time: new Date().toLocaleTimeString(),
+        read: false
+      };
+      // Always read latest from localStorage
+      const saved = localStorage.getItem('doctorNotifications');
+      const current = saved ? JSON.parse(saved) : [];
+      const updated = [newNotification, ...current];
+      setNotifications(updated);
+      localStorage.setItem('doctorNotifications', JSON.stringify(updated));
+
+      // Show browser notification if permission granted
+      if (Notification.permission === "granted") {
+        new Notification("Payment Received", {
+          body: `Payment of ₹${data.amount} received from ${data.patientName}`,
+          icon: "/icons/payment-success.png"
+        });
+      }
+    });
+
     return () => {
       socket.off('newAppointment');
+      socket.off('paymentReceived');
     };
   }, []);
 

@@ -93,6 +93,11 @@ export const getMyAppointments = async (req, res) => {
             status: appt.status,
             rejectionReason: appt.rejectionReason,
             createdAt: appt.createdAt,
+            // Payment information
+            paymentStatus: appt.paymentStatus || 'Pending',
+            amount: appt.amount || doctor.consultationFees,
+            paymentId: appt.paymentId || '',
+            orderId: appt.orderId || '',
           });
         }
       });

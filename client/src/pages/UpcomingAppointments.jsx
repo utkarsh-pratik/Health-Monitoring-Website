@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import PaymentComponent from '../components/PaymentComponent';
 
 const UpcomingAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [scrollY, setScrollY] = useState(0); // Track scroll position
   const [error, setError] = useState(null); // Handle errors
   const [loading, setLoading] = useState(true); // Handle loading state
+  const [showPayment, setShowPayment] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const token = localStorage.getItem('token');
 
   // Fetch the appointments
@@ -56,6 +59,36 @@ const UpcomingAppointments = () => {
       // Implement infinite scroll logic if needed, for now, just fetch more appointments
       fetchAppointments();
     }
+  };
+
+  // Handle payment button click
+  const handlePaymentClick = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowPayment(true);
+  };
+
+  // Handle successful payment
+  const handlePaymentSuccess = (paymentId) => {
+    setShowPayment(false);
+    setSelectedAppointment(null);
+    
+    // Update the appointment payment status in local state
+    setAppointments(prev => 
+      prev.map(appt => 
+        appt.appointmentId === selectedAppointment.appointmentId 
+          ? { ...appt, paymentStatus: 'Paid', paymentId } 
+          : appt
+      )
+    );
+    
+    // Refresh appointments from server
+    fetchAppointments();
+  };
+
+  // Handle payment close
+  const handlePaymentClose = () => {
+    setShowPayment(false);
+    setSelectedAppointment(null);
   };
 
   useEffect(() => {
@@ -170,6 +203,42 @@ const UpcomingAppointments = () => {
                   )}
                 </div>
 
+                {/* Payment Section */}
+                {appt.status === 'Confirmed' && (
+                  <div className="mt-6 p-4 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-xl border border-purple-400/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-purple-200">Consultation Fee:</span>
+                      <span className="text-lg font-bold text-yellow-300">₹{appt.amount}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-purple-200">Payment Status:</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        appt.paymentStatus === 'Paid' 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-yellow-400 text-gray-900'
+                      }`}>
+                        {appt.paymentStatus === 'Paid' ? '✅ Paid' : '⏳ Pending'}
+                      </span>
+                    </div>
+
+                    {appt.paymentStatus !== 'Paid' && (
+                      <button
+                        onClick={() => handlePaymentClick(appt)}
+                        className="w-full mt-2 py-2 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
+                      >
+                        💳 Pay Now
+                      </button>
+                    )}
+
+                    {appt.paymentStatus === 'Paid' && appt.paymentId && (
+                      <div className="mt-2 text-xs text-green-300 text-center">
+                        Payment ID: {appt.paymentId}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Booked At Label */}
                 <div className="text-sm text-white-300 mt-4 text-center">
                   <span className="font-semibold">Booked At: </span>
@@ -184,6 +253,17 @@ const UpcomingAppointments = () => {
           </ul>
         )}
       </div>
+
+      {/* Payment Modal */}
+      {showPayment && selectedAppointment && (
+        <PaymentComponent
+          appointmentId={selectedAppointment.appointmentId}
+          doctorName={selectedAppointment.doctorName}
+          amount={selectedAppointment.amount}
+          onSuccess={handlePaymentSuccess}
+          onClose={handlePaymentClose}
+        />
+      )}
     </div>
   );
 };

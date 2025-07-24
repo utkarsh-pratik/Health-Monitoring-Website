@@ -13,10 +13,19 @@ const appointmentSchema = new mongoose.Schema({
   rejectionReason: { 
     type: String,
      trim: true, 
-     default: '' }, // NEW FIELD
+     default: '' },
   patientRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   notifiedTwentyFourHours: { type: Boolean, default: false },
   notifiedOneHour: { type: Boolean, default: false },
+  // Payment related fields
+  paymentStatus: {
+    type: String,
+    enum: ['Pending', 'Paid', 'Failed', 'Refunded'],
+    default: 'Pending',
+  },
+  paymentId: { type: String, default: '' },
+  orderId: { type: String, default: '' },
+  amount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -55,8 +55,37 @@ const DoctorNotifications = () => {
       }
     });
 
+    // Listen for payment notifications
+    socket.on('paymentReceived', (data) => {
+      const newNotification = {
+        id: Date.now(),
+        type: 'payment',
+        patientName: data.patientName,
+        amount: data.amount,
+        paymentId: data.paymentId,
+        appointmentId: data.appointmentId,
+        time: new Date().toLocaleTimeString(),
+        read: false
+      };
+      // Always read latest from localStorage
+      const saved = localStorage.getItem('doctorNotifications');
+      const current = saved ? JSON.parse(saved) : [];
+      const updated = [newNotification, ...current];
+      setNotifications(updated);
+      localStorage.setItem('doctorNotifications', JSON.stringify(updated));
+
+      // Show browser notification if permission granted
+      if (Notification.permission === "granted") {
+        new Notification("Payment Received", {
+          body: `Payment of ₹${data.amount} received from ${data.patientName}`,
+          icon: "/icons/payment-success.png"
+        });
+      }
+    });
+
     return () => {
       socket.off('newAppointment');
+      socket.off('paymentReceived');
     };
   }, []);
 
@@ -90,20 +119,39 @@ const DoctorNotifications = () => {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold text-lg text-gray-800">
-                      New Appointment Request
-                    </h3>
-                    <p className="text-gray-600 mt-1">
-                      Patient: {notification.patientName}
-                    </p>
-                    <p className="text-gray-600">
-                      Time: {new Date(notification.appointmentTime).toLocaleString()}
-                    </p>
-                    {notification.reason && (
-                      <p className="text-gray-600 mt-1">
-                        Reason: {notification.reason}
-                      </p>
-                    )}
+                    {notification.type === 'appointment' ? (
+                      <>
+                        <h3 className="font-semibold text-lg text-gray-800">
+                          New Appointment Request
+                        </h3>
+                        <p className="text-gray-600 mt-1">
+                          Patient: {notification.patientName}
+                        </p>
+                        <p className="text-gray-600">
+                          Time: {new Date(notification.appointmentTime).toLocaleString()}
+                        </p>
+                        {notification.reason && (
+                          <p className="text-gray-600 mt-1">
+                            Reason: {notification.reason}
+                          </p>
+                        )}
+                      </>
+                    ) : notification.type === 'payment' ? (
+                      <>
+                        <h3 className="font-semibold text-lg text-green-800">
+                          💰 Payment Received
+                        </h3>
+                        <p className="text-gray-600 mt-1">
+                          Patient: {notification.patientName}
+                        </p>
+                        <p className="text-green-600 font-semibold">
+                          Amount: ₹{notification.amount}
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Payment ID: {notification.paymentId}
+                        </p>
+                      </>
+                    ) : null}
                     <p className="text-sm text-gray-400 mt-2">
                       {notification.time}
                     </p>

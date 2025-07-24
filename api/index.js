@@ -9,6 +9,7 @@ import { Server } from "socket.io";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import reminderScheduler from "./reminderScheduler.js"; // Import the reminder scheduler
 
 import jwt from "jsonwebtoken";
@@ -78,6 +79,7 @@ app.use(express.json());
 app.use("/api/appointments" , patientRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/patient", patientRoutes);
+app.use("/api/payment", paymentRoutes);
 
 
 // Protected routes (token required)
