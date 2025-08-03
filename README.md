@@ -74,7 +74,7 @@ A full-stack healthcare management platform built with the MERN stack, featuring
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Sarthak-248/summer_training-.git
+   git clone https://github.com/utkarsh-pratik/Health-Monitoring-website.git
    cd summer_training-
    ```
 
@@ -252,7 +252,7 @@ This project is licensed under the ISC License.
 ## 👥 Team
 
 - **Developer**: [Your Name]
-- **Repository**: https://github.com/Sarthak-248/summer_training-
+- **Repository**: https://github.com/utkarsh-pratik/Health-Monitoring-website.git
 
 ## 🐛 Bug Reports
 
