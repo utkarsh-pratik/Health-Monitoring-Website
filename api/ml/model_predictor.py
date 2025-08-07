@@ -76,6 +76,7 @@ def clean_ocr_text(text):
         r"cells\s*/\s*µl": "cells/µL",
         r"cells\s*/\s*Ul": "cells/µL",
         r"cells\s*/\s*PL": "cells/µL",
+        r"cells/yuL": "cells/µL",
 
         r"million\s*/\s*[pPμµuU]?[lL]": "million/µL",  # million/yL variations
         r"million\s*/\s*ul": "million/µL",
@@ -85,14 +86,19 @@ def clean_ocr_text(text):
         r"million\s*/\s*PL": "million/µL",
 
         # MCV units normalization (fL)
+        r"MCV\s*\([fF]L\)": "MCV (fL)",
         r"MCV\s*\([\£fF][lL]\)": "MCV (fL)",
         r"MCV\s*\([fF1Il|]+\)": "MCV (fL)",
+        r"MCV\s*\([fF].L\)": "MCV (fL)", # Add this line
+        r"MCV\s*\([fF]L\)": "MCV (fL)",
+        r"MCV\s*\([\£fF][lL]\)": "MCV (fL)",
         r"\bfl\b": "fL",
         r"\bFl\b": "fL",
         r"\bFL\b": "fL",
         r"£L": "fL",
 
         # General unit fixes
+        r"\bpL\b": "µL",
         r"\bpL\b": "µL",
         r"\bpl\b": "µL",
         r"\bPL\b": "µL",
@@ -105,6 +111,7 @@ def clean_ocr_text(text):
         r"µl": "µL",
 
         # Remove extra spaces around slashes
+        r"cells\s*/\s*[pPyYμµuU]?[lL]": "cells/µL",  # cells/pL, cells/uL, cells/μL, yL with optional space        r"cells\s*/\s*ul": "cells/µL",
         r"cells\s*/\s*µL": "cells/µL",
         r"million\s*/\s*µL": "million/µL",
     }
