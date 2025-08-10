@@ -1,28 +1,39 @@
 # Dockerfile
 
-# Use a base image with Node.js and Python
-FROM node:18-slim
+# Use a more complete base image that includes common build tools
+FROM node:18
 
-# Install Python, pip, and git
-RUN apt-get update && apt-get install -y python3 python3-pip git
+# Set environment to non-interactive to prevent prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Set the working directory
+# Install Python, pip, and the required system dependencies for your ML packages
+# - poppler-utils is for the pdf2image package
+# - tesseract-ocr is for the pytesseract package
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    git \
+    poppler-utils \
+    tesseract-ocr \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy root package.json and install backend dependencies
+# Copy package.json and package-lock.json and install Node.js dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy the entire api directory
+# Copy the requirements.txt file and install Python dependencies
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy the rest of your application code
 COPY api/ ./api/
 
-# Install Python dependencies from requirements.txt
-# Ensure requirements.txt is inside the api/ directory or adjust the path
-COPY requirements.txt ./
-RUN pip3 install -r requirements.txt
-
-# Expose the port the app runs on
+# Expose the port your backend server runs on
 EXPOSE 5000
 
-# Command to run the application
+# The command to start your application
 CMD ["npm", "start"]
