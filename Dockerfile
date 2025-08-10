@@ -7,7 +7,7 @@ FROM node:20
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Python, pip, and all necessary system dependencies.
-# ADDED: python3-dev, libffi-dev, and pkg-config for building C extensions.
+# ADDED: gfortran and libopenblas-dev for scientific packages like scikit-learn/numpy.
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     poppler-utils \
     tesseract-ocr \
+    gfortran \
+    libopenblas-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
