@@ -7,7 +7,6 @@ FROM node:20
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Python, pip, and all necessary system dependencies.
-# ADDED: gfortran and libopenblas-dev for scientific packages like scikit-learn/numpy.
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -34,7 +33,12 @@ RUN npm install
 
 # Copy Python requirements file
 COPY requirements.txt ./
-# Install Python dependencies, using --break-system-packages to fix the environment error
+
+# --- THIS IS THE CRITICAL FIX ---
+# Upgrade Python's build tools before installing packages
+RUN pip3 install --upgrade pip setuptools wheel
+
+# Install Python dependencies
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Copy the rest of your backend application code
