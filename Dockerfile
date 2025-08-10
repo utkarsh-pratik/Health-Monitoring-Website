@@ -1,18 +1,22 @@
 # Dockerfile
 
-# Use a more complete base image that includes common build tools
+# Use a standard Node.js image based on Debian
 FROM node:18
 
 # Set environment to non-interactive to prevent prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Python, pip, and the required system dependencies for your ML packages
-# - poppler-utils is for the pdf2image package
-# - tesseract-ocr is for the pytesseract package
+# Install Python, pip, essential build tools, and dependencies for your packages.
+# - build-essential, libjpeg-dev, zlib1g-dev are for packages like Pillow.
+# - poppler-utils is for pdf2image.
+# - tesseract-ocr is for pytesseract.
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     git \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
     poppler-utils \
     tesseract-ocr \
     && apt-get clean \
@@ -21,7 +25,7 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json and install Node.js dependencies
+# Copy package.json and package-lock.json first to leverage Docker cache
 COPY package*.json ./
 RUN npm install
 
