@@ -16,14 +16,20 @@ import traceback
 # Ensure proper stdout encoding
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-# === Configurations ===
-POPPLER_PATH = r"C:\Users\utkar\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin"
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-MODEL_PATH = r"C:\Users\utkar\Downloads\proj\New folder\summer_training-\api\rf_model.joblib"
-LABEL_ENCODER_PATH = r"C:\Users\utkar\Downloads\proj\New folder\summer_training-\api\label_encoder.joblib"
+# Get the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Configure pytesseract
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+# === Configurations ===
+# These paths are not needed inside the Docker container as they are installed system-wide
+# POPPLER_PATH = ...
+# TESSERACT_PATH = ...
+
+# Use relative paths to load model files from the same directory as the script
+MODEL_PATH = os.path.join(script_dir, '..', 'rf_model.joblib')
+LABEL_ENCODER_PATH = os.path.join(script_dir, '..', 'label_encoder.joblib')
+
+# This is not needed inside the Docker container
+# pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 def is_pdf(file_path):
     ext = os.path.splitext(file_path)[-1].lower()
