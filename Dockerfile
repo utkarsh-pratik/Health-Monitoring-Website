@@ -35,8 +35,8 @@ RUN npm install
 COPY requirements.txt ./
 
 # --- THIS IS THE CRITICAL FIX ---
-# Upgrade Python's build tools before installing packages
-RUN pip3 install --upgrade pip setuptools wheel
+# Upgrade Python's build tools before installing packages, breaking the system lock
+RUN pip3 install --upgrade --break-system-packages pip setuptools wheel
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
