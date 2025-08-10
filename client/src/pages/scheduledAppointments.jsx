@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import moment from "moment";
+import api from '../api';
 import {
   FaUserAlt,
   FaPhoneAlt,
@@ -30,8 +31,8 @@ const ScheduledAppointment = () => {
           return;
         }
 
-        const res = await axios.get(
-          "http://localhost:5000/api/doctors/scheduled-appointments",
+        const res = await api.get(
+          "/api/doctors/scheduled-appointments",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -72,8 +73,8 @@ const ScheduledAppointment = () => {
     setLoading(id, true);
     try {
       const token = localStorage.getItem("token");
-      await axios.patch(
-        `http://localhost:5000/api/doctors/appointments/${id}/status`,
+      await api.patch(
+        `/api/doctors/appointments/${id}/status`,
         { status: "Confirmed" },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -98,8 +99,8 @@ const ScheduledAppointment = () => {
   setLoading(id, true);
   try {
     const token = localStorage.getItem("token");
-    await axios.patch(
-      `http://localhost:5000/api/doctors/appointments/${id}/status`,
+    await api.patch(
+      `/api/doctors/appointments/${id}/status`,
       { status: "Cancelled",
         reason: cancelReason
        }, // Send status explicitly
@@ -136,7 +137,7 @@ const ScheduledAppointment = () => {
   //   setLoading(rescheduleId, true);
   //   try {
   //     const token = localStorage.getItem("token");
-  //     await axios.patch(
+  //     await api.patch(
   //       `http://localhost:5000/api/doctors/appointments/${rescheduleId}/reschedule`,
   //       { newTime: newDate.toISOString() },
   //       {

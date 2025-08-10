@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import notsuccess from '../assets/notifysuccess.png';
 import noterror from '../assets/notifyerror.png';
+import api from '../api';
 //import DoctorFlipCard from '../components/DoctorFlipCard';
 
 const BookAppointment = () => {
@@ -46,7 +47,7 @@ const BookAppointment = () => {
         if (filters.day) params.day = filters.day;
         if (filters.slotTime) params.slotTime = filters.slotTime;
 
-        const res = await axios.get('/api/doctors/available', { params });
+        const res = await api.get('/api/doctors/available', { params });
         setDoctors(res.data);
       } catch (err) {
         console.error('Error fetching doctors:', err);
@@ -62,7 +63,7 @@ const BookAppointment = () => {
   useEffect(() => {
     if (!selectedDoctor || !selectedDate) return;
     const fetchSlots = async () => {
-      const res = await axios.get(`/api/doctors/${selectedDoctor._id}/slots`, {
+      const res = await api.get(`/api/doctors/${selectedDoctor._id}/slots`, {
         params: { date: selectedDate }
       });
       setDoctorSlots(res.data.slots || []);
@@ -114,7 +115,7 @@ const BookAppointment = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
+      await api.post(
         `/api/appointments/book-appointment/${selectedDoctor._id}`,
         { ...form, appointmentTime },
         {

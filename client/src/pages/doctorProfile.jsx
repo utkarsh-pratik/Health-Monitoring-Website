@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import api from '../api';
 
 const DoctorProfile = ({ doctorId }) => {
     const [availableSlots, setAvailableSlots] = useState([]);
@@ -8,7 +9,7 @@ const DoctorProfile = ({ doctorId }) => {
 
     useEffect(() => {
         // Fetch doctor's current availability
-        axios.get(`/api/doctors/${doctorId}`)
+        api.get(`/api/doctors/${doctorId}`)
             .then(response => setAvailableSlots(response.data.availableSlots))
             .catch(error => console.error("Error fetching availability:", error));
     }, [doctorId]);
@@ -28,7 +29,7 @@ const DoctorProfile = ({ doctorId }) => {
     };
 
     const handleSave = () => {
-        axios.post("/api/doctors/set-availability", { doctorId, availableSlots })
+        api.post("/api/doctors/set-availability", { doctorId, availableSlots })
             .then(() => alert("Availability updated successfully"))
             .catch(error => console.error("Error updating availability:", error));
     };

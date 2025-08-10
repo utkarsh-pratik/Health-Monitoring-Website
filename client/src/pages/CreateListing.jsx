@@ -1,6 +1,7 @@
 // src/pages/CreateListing.jsx
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import api from '../api';
 
 const defaultAvatar = "https://api.dicebear.com/7.x/adventurer/svg?seed=doctor";
 
@@ -40,13 +41,13 @@ const CreateListing = () => {
       try {
         const token = localStorage.getItem("token");
         // Get user info (name, email)
-        const userRes = await axios.get("/api/auth/profile", {
+        const userRes = await api.get("/api/auth/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(userRes.data);
 
         // Get doctor profile
-        const docRes = await axios.get("/api/doctors/my-profile", {
+        const docRes = await api.get("/api/doctors/my-profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDoctor(docRes.data);
@@ -61,7 +62,7 @@ const CreateListing = () => {
         // If no profile, prefill name/email from user
         try {
           const token = localStorage.getItem("token");
-          const userRes = await axios.get("/api/auth/profile", {
+          const userRes = await api.get("/api/auth/profile", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setUser(userRes.data);
@@ -132,13 +133,13 @@ const CreateListing = () => {
       // If doctor profile exists, update; else, create
       let res;
       try {
-        res = await axios.put("/api/doctors/my-profile", data, {
+        res = await api.put("/api/doctors/my-profile", data, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMsg("Profile updated successfully!");
       } catch (err) {
         // If not found, create new
-        res = await axios.post("/api/doctors/create-listing", data, {
+        res = await api.post("/api/doctors/create-listing", data, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMsg("Profile created successfully!");

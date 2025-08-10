@@ -16,12 +16,24 @@ import jwt from "jsonwebtoken";
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: "http://localhost:5173", // Your React app's URL
-    methods: ["GET", "POST"]
-  }
-});
+
+const allowedOrigins = [
+  "http://localhost:5173", // Development frontend
+  "https://your-frontend-app-name.vercel.app" // Production frontend
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
+const io = new Server(httpServer, { cors: corsOptions });
 
 // Store socket mappings (support multiple sockets per user)
 const doctorSockets = {};
@@ -69,7 +81,7 @@ app.set('io', io);
 app.set('doctorSockets', doctorSockets);
 app.set('patientSockets', patientSockets);
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Middleware to authenticate and populate req.user

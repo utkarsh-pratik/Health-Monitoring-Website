@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import api from '../api';
 
 const PaymentComponent = ({ appointmentId, doctorName, amount, onSuccess, onClose }) => {
   const [loading, setLoading] = useState(false);
@@ -12,8 +13,8 @@ const PaymentComponent = ({ appointmentId, doctorName, amount, onSuccess, onClos
 
       // Create payment order
       const token = localStorage.getItem('token');
-      const orderResponse = await axios.post(
-        `http://localhost:5000/api/payment/create-order/${appointmentId}`,
+      const orderResponse = await api.post(
+        `/api/payment/create-order/${appointmentId}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -33,8 +34,8 @@ const PaymentComponent = ({ appointmentId, doctorName, amount, onSuccess, onClos
         handler: async function (response) {
           try {
             // Verify payment
-            const verifyResponse = await axios.post(
-              `http://localhost:5000/api/payment/verify/${appointmentId}`,
+            const verifyResponse = await api.post(
+              `/api/payment/verify/${appointmentId}`,
               {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,

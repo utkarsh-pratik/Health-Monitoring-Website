@@ -16,19 +16,21 @@ import traceback
 # Ensure proper stdout encoding
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
+# api/ml/model_predictor.py
+
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # === Configurations ===
-# These paths are not needed inside the Docker container as they are installed system-wide
-# POPPLER_PATH = ...
-# TESSERACT_PATH = ...
+# POPPLER_PATH and TESSERACT_PATH are not needed inside the Docker container
+# as the tools are installed system-wide and available in the PATH.
 
-# Use relative paths to load model files from the same directory as the script
+# Use relative paths to load model files.
+# Assumes rf_model.joblib and label_encoder.joblib are in the `api/` directory.
 MODEL_PATH = os.path.join(script_dir, '..', 'rf_model.joblib')
 LABEL_ENCODER_PATH = os.path.join(script_dir, '..', 'label_encoder.joblib')
 
-# This is not needed inside the Docker container
+# This line is not needed inside the Docker container.
 # pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 def is_pdf(file_path):

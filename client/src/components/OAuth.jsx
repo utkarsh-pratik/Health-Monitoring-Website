@@ -17,7 +17,8 @@ const OAuth = () => {
 
             const result = await signInWithPopup(auth, provider);
             
-            const res = await fetch("/api/auth/google", {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_URL}/api/auth/google`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

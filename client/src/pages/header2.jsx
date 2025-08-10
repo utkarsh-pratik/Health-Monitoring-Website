@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../components/ProfileDropdown';
 import { Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../api'; 
 
-const socket = io('http://localhost:5000');
+const socket = io(SOCKET_URL);
 
 const DoctorHome = () => {
   const navigate = useNavigate();

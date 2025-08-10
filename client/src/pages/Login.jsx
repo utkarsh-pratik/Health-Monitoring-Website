@@ -1,6 +1,8 @@
+// client/src/pages/Login.jsx
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import api from '../api'; // Correctly imported
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -15,9 +17,12 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post("http://localhost:5000/api/auth/login", { email, password,});
+            // Use the 'api' helper here instead of 'axios'
+            const res = await api.post("/api/auth/login", { email, password });
+            
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("role", res.data.user.role);
+            
             if (res.data.user.role === "doctor" && res.data.user.doctorId) {
                 localStorage.setItem("doctorId", res.data.user.doctorId);
                 console.log("[LOGIN] Set doctorId in localStorage:", res.data.user.doctorId);

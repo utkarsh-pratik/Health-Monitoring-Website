@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import PaymentComponent from '../components/PaymentComponent';
+import api from '../api';
 
 const UpcomingAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -15,7 +16,7 @@ const UpcomingAppointments = () => {
   const fetchAppointments = async () => {
     setLoading(true); // Show loading state
     try {
-      const res = await axios.get('http://localhost:5000/api/appointments/getmyappointments', {
+      const res = await api.get('/api/appointments/getmyappointments', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',

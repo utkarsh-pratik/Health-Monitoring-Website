@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from '../api';
 
 export default function Analyze() {
   const [result, setResult] = useState(null);
@@ -45,24 +46,16 @@ export default function Analyze() {
     const formData = new FormData(e.target);
 
     try {
-      const res = await fetch("http://localhost:5000/api/patient/analyze-report", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server error: ${res.statusText}`);
-      }
-
-      const data = await res.json();
-
+      const res = await api.post("/api/patient/analyze-report", formData);
+      // axios wraps the response in a `data` object
+      const data = res.data; 
       if (data.error) {
         throw new Error(data.error);
       }
 
       setResult(data.severity);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }

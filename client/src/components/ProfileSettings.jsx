@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import api from '../api';
 
 const daysOrder = [
   "Monday",
@@ -21,7 +22,7 @@ const ProfileSettings = () => {
     const fetchAllSlots = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/doctors/my-profile", {
+        const res = await api.post("/api/doctors/my-profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -51,21 +52,14 @@ const ProfileSettings = () => {
   const handleDeleteSetSlot = async (day, start, end) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/doctors/delete-availability", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ day, start, end }),
-      });
-      const respData = await response.json();
+      const response = await api.post("/api/doctors/delete-availability", { day, start, end });
+      const respData = response.data;
       setMessage(respData.message || "Slot deleted successfully");
     // Refresh all slots
-    const res = await fetch("http://localhost:5000/api/doctors/my-profile", {
+    const res = await api.post("/api/doctors/my-profile", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const data = await res.json();
+    const data = await res.data;
     setAllSlots(data.availability || []);
   } catch (error) {
     setMessage("Failed to delete slot. Please try again.");
@@ -76,10 +70,10 @@ const ProfileSettings = () => {
     try {
       const token = localStorage.getItem("token");
       // 1. Fetch current slots
-      const res = await fetch("http://localhost:5000/api/doctors/my-profile", {
+      const res = await api.post("/api/doctors/my-profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
+      const data = await res.data;
       let existing = [];
       if (data.availability) {
         data.availability.forEach(daySlot => {
@@ -111,16 +105,8 @@ const ProfileSettings = () => {
       const availability = Object.entries(grouped).map(([day, slots]) => ({ day, slots }));
 
       // 4. Save merged slots
-      const response = await fetch("http://localhost:5000/api/doctors/set-availability", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ availability }),
-      });
-
-      const respData = await response.json();
+      const response = await api.post("/api/doctors/set-availability", { availability });
+      const respData = response.data;
       setMessage(respData.message || "Slots saved successfully");
     } catch (error) {
       setMessage("Failed to save slots. Please try again.");

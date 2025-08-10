@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import Header1 from './header1';
+import api from '../api';
 
 const fields = [
   { key: "age", label: "Age", type: "number" },
@@ -32,13 +33,13 @@ const Profile = () => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        const userRes = await axios.get("/api/auth/profile", {
+        const userRes = await api.get("/api/auth/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(userRes.data);
 
         if (userRes.data.role === "patient") {
-          const patientRes = await axios.get("/api/patient/profile", {
+          const patientRes = await api.get("/api/patient/profile", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setPatient(patientRes.data);
@@ -84,7 +85,7 @@ const Profile = () => {
       fields.forEach((field) => data.append(field.key, form[field.key] || ""));
       if (photoFile) data.append("photo", photoFile);
 
-      const res = await axios.put("/api/patient/profile", data, {
+      const res = await api.put("/api/patient/profile", data, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPatient(res.data);

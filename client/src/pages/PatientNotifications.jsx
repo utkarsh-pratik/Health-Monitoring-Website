@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../api'; 
 
-const socket = io('http://localhost:5000');
+const socket = io(SOCKET_URL);
 
 const PatientNotifications = () => {
   const [notifications, setNotifications] = useState(() => {

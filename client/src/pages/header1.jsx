@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DashboardDropdown from "../components/dashboardDropdown";
 import { io } from 'socket.io-client';
-
-const socket = io('http://localhost:5000');
+import { SOCKET_URL } from '../api'; 
+const socket = io(SOCKET_URL);
 
 const PatientHome = () => {
   const [menuOpen, setMenuOpen] = useState(false);

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 import { FaArrowLeft, FaNotesMedical } from 'react-icons/fa';
+import api from '../api';
 
 export default function PatientHistory() {
   const { id } = useParams(); // patient ID from URL
@@ -17,8 +18,8 @@ export default function PatientHistory() {
   const fetchHistory = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(
-        `http://localhost:5000/api/doctors/patient-history/${id}`,
+      const res = await api.get(
+        `/api/doctors/patient-history/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -46,8 +47,8 @@ export default function PatientHistory() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(
-        `http://localhost:5000/api/doctors/patient-history/${id}`,
+      const res = await api.post(
+        `/api/doctors/patient-history/${id}`,
         { history: newHistory }, // Send the new history
         {
           headers: {
