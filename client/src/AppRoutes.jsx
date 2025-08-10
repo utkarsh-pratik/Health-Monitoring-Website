@@ -23,6 +23,7 @@ import PatientDashboard from "./components/patientDashboard";
 import ScheduledAppointment from "./pages/scheduledAppointments";
 import PatientHistory from "./pages/PatientHistory";
 import Analyze from "./pages/Analyze";
+import VideoCallPage from "./pages/VideoCallPage";
 import { useState, useEffect } from "react";
 
 
@@ -74,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/video-call/:appointmentId" element={<VideoCallPage />} />
   
       
 

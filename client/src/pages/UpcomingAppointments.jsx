@@ -9,6 +9,8 @@ const UpcomingAppointments = () => {
   const [loading, setLoading] = useState(true); // Handle loading state
   const [showPayment, setShowPayment] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [updateKey, setUpdateKey] = useState(0); // Force re-render key
+  const [currentTime, setCurrentTime] = useState(new Date()); // Track current time for real-time updates
   const token = localStorage.getItem('token');
 
   // Fetch the appointments
@@ -63,26 +65,34 @@ const UpcomingAppointments = () => {
 
   // Handle payment button click
   const handlePaymentClick = (appointment) => {
+    console.log('Opening payment for appointment:', appointment);
     setSelectedAppointment(appointment);
     setShowPayment(true);
   };
 
   // Handle successful payment
   const handlePaymentSuccess = (paymentId) => {
-    setShowPayment(false);
-    setSelectedAppointment(null);
+    console.log('Payment successful, updating appointment:', selectedAppointment?.appointmentId);
     
-    // Update the appointment payment status in local state
+    // Update the appointment payment status in local state immediately
     setAppointments(prev => 
       prev.map(appt => 
-        appt.appointmentId === selectedAppointment.appointmentId 
+        appt.appointmentId === selectedAppointment?.appointmentId 
           ? { ...appt, paymentStatus: 'Paid', paymentId } 
           : appt
       )
     );
     
-    // Refresh appointments from server
-    fetchAppointments();
+    setShowPayment(false);
+    setSelectedAppointment(null);
+    
+    // Force component re-render
+    setUpdateKey(prev => prev + 1);
+    
+    // Refresh appointments from server to ensure sync
+    setTimeout(() => {
+      fetchAppointments();
+    }, 1000);
   };
 
   // Handle payment close
@@ -102,13 +112,37 @@ const UpcomingAppointments = () => {
 
     window.addEventListener('scroll', handleScroll);
 
+    // Update current time every minute for real-time video call button updates
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      clearInterval(timeInterval);
     };
   }, [token]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-purple-950 via-black to-violet-950 items-center px-6 pt-16 pb-8 relative transition-all duration-300">
+      {/* Custom Styles */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+      `}</style>
+      
       {/* Heading */}
       <h1 className="text-4xl font-extrabold mt-4 mb-8 text-center text-yellow-300 drop-shadow-lg tracking-wide max-w-4xl w-full">
         Your Upcoming Appointments 📅✨
@@ -125,7 +159,7 @@ const UpcomingAppointments = () => {
         {appointments.length === 0 && !loading ? (
           <p className="text-yellow-100 text-center py-10 text-xl">No upcoming appointments. 💤</p>
         ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
+          <ul key={updateKey} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
             {appointments.map((appt) => (
               <li
                 key={appt._id}
@@ -213,9 +247,9 @@ const UpcomingAppointments = () => {
                     
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold text-purple-200">Payment Status:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-500 ${
                         appt.paymentStatus === 'Paid' 
-                          ? 'bg-green-500 text-white' 
+                          ? 'bg-green-500 text-white animate-pulse' 
                           : 'bg-yellow-400 text-gray-900'
                       }`}>
                         {appt.paymentStatus === 'Paid' ? '✅ Paid' : '⏳ Pending'}
@@ -232,10 +266,45 @@ const UpcomingAppointments = () => {
                     )}
 
                     {appt.paymentStatus === 'Paid' && appt.paymentId && (
-                      <div className="mt-2 text-xs text-green-300 text-center">
+                      <div className="mt-2 text-xs text-green-300 text-center animate-fadeIn">
+                        🎉 Payment Successful! <br />
                         Payment ID: {appt.paymentId}
                       </div>
                     )}
+
+                    {/* Video Call Button - Only show if payment is completed and appointment time is within range */}
+                    {appt.paymentStatus === 'Paid' && (() => {
+                      const appointmentTime = new Date(appt.date);
+                      const timeDiffMinutes = (appointmentTime.getTime() - currentTime.getTime()) / (1000 * 60);
+                      
+                      // Show button 15 minutes before appointment until 2 hours after
+                      const isTimeForCall = timeDiffMinutes <= 15 && timeDiffMinutes >= -120;
+                      
+                      if (!isTimeForCall) {
+                        return (
+                          <div className="w-full mt-3 py-2 px-4 bg-gray-400 text-white font-semibold rounded-lg text-center opacity-75">
+                            {timeDiffMinutes > 15 
+                              ? `📅 Call available ${Math.ceil(timeDiffMinutes - 15)} min before appointment`
+                              : '⏰ Call window has ended'
+                            }
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <button
+                          onClick={() => window.open(`/video-call/${appt.appointmentId}`, '_blank')}
+                          className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 animate-pulse"
+                        >
+                          📹 Join Video Call
+                          {timeDiffMinutes <= 0 && timeDiffMinutes >= -5 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-bounce">
+                              LIVE NOW
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })()}
                   </div>
                 )}
 

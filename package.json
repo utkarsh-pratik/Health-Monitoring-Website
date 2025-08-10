@@ -39,7 +39,8 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.0",
     "socket.io": "^4.8.1",
-    "swiper": "^11.2.1"
+    "swiper": "^11.2.1",
+    "twilio": "^5.8.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react-swc": "^3.10.0",

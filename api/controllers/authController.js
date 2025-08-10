@@ -43,7 +43,7 @@ export const signup = async (req, res) => {
     const token = jwt.sign(
       { _id: newUser._id, role: newUser.role, contact: newUser.email, name: newUser.name }, 
       process.env.JWT_SECRET, 
-      { expiresIn: "1h" }
+      { expiresIn: "7d" } // Extended to 7 days for better user experience
     );
 
     res.status(201).json({
@@ -78,7 +78,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { _id: user._id, role: user.role, name: user.name, contact: user.email }, 
       process.env.JWT_SECRET, 
-      { expiresIn: "1h" }
+      { expiresIn: "7d" } // Extended to 7 days for better user experience
     );
 
     let doctorId = null;
