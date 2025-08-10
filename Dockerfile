@@ -6,12 +6,16 @@ FROM node:20
 # Set environment to non-interactive to prevent prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Python, pip, and all necessary system dependencies
+# Install Python, pip, and all necessary system dependencies.
+# ADDED: python3-dev, libffi-dev, and pkg-config for building C extensions.
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
+    python3-dev \
     git \
     build-essential \
+    libffi-dev \
+    pkg-config \
     libjpeg-dev \
     zlib1g-dev \
     poppler-utils \
