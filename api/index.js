@@ -102,15 +102,10 @@ app.use(express.json());
 // Public routes (no token needed)
 app.use("/api/appointments" , patientRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/doctors", doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/payment", paymentRoutes);
 
-
-// Protected routes (token required)
-// Doctor routes (auth handled inside doctorRoutes.js)
-app.use("/api/doctors", doctorRoutes);
-
-  //app.use("/api/appointments", doctorRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URL, {
