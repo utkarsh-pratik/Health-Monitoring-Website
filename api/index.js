@@ -27,14 +27,10 @@ const allowedOrigins = [
 ];
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigins, // Directly pass the array
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Explicitly allow methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Explicitly allow headers
 };
 
 // --- Middleware ---
@@ -78,4 +74,3 @@ mongoose
     });
   })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
-  
