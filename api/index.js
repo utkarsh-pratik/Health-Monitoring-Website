@@ -17,24 +17,35 @@ import jwt from "jsonwebtoken";
 const app = express();
 const httpServer = createServer(app);
 
+const io = new Server(httpServer, { // This is the line to add
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "https://health-monitoring-website.vercel.app",
+    ],
+    methods: ["GET", "POST"],
+  },
+});
+
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://health-monitoring-website.vercel.app"
+  "https://health-monitoring-website.vercel.app",
 ];
 
-// Configure CORS for the main Express API
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+};
 
-// Configure CORS specifically and directly for the Socket.IO server
-const io = new Server(httpServer, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"] // Required for Socket.IO
-  }
-});
+app.use(cors(corsOptions));
 
 // Store socket mappings (support multiple sockets per user)
 const doctorSockets = {};
