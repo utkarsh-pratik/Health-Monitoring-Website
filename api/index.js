@@ -18,26 +18,21 @@ const app = express();
 const httpServer = createServer(app);
 
 const allowedOrigins = [
-  "http://localhost:5173", // Development frontend
-  "https://health-monitoring-website.vercel.app" // Production frontend
+  "http://localhost:5173",
+  "https://health-monitoring-website.vercel.app"
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-};
+// Configure CORS for the main Express API
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
-// api/index.js
+// Configure CORS specifically and directly for the Socket.IO server
 const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
-    credentials: true
+    methods: ["GET", "POST"] // Required for Socket.IO
   }
 });
 
