@@ -33,7 +33,13 @@ const corsOptions = {
   credentials: true,
 };
 
-const io = new Server(httpServer, { cors: corsOptions });
+// api/index.js
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  }
+});
 
 // Store socket mappings (support multiple sockets per user)
 const doctorSockets = {};
