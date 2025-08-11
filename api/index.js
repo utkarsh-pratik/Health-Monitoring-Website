@@ -17,35 +17,31 @@ import jwt from "jsonwebtoken";
 const app = express();
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, { // This is the line to add
-  cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://health-monitoring-website.vercel.app",
-    ],
-    methods: ["GET", "POST"],
-  },
-});
-
 const allowedOrigins = [
   "http://localhost:5173",
   "https://health-monitoring-website.vercel.app",
 ];
 
+// Define CORS options once
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
     }
-    return callback(null, true);
   },
   credentials: true,
 };
 
+// Apply CORS middleware to the Express app FIRST
 app.use(cors(corsOptions));
+app.use(express.json());
+
+// Initialize Socket.IO server with the same CORS options
+const io = new Server(httpServer, {
+  cors: corsOptions,
+});
 
 // Store socket mappings (support multiple sockets per user)
 const doctorSockets = {};
@@ -93,18 +89,13 @@ app.set('io', io);
 app.set('doctorSockets', doctorSockets);
 app.set('patientSockets', patientSockets);
 
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Middleware to authenticate and populate req.user
-
 
 // Public routes (no token needed)
-app.use("/api/appointments" , patientRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/appointments" , patientRoutes);
 
 
 mongoose
