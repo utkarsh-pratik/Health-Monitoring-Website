@@ -13,6 +13,7 @@
     "@reduxjs/toolkit": "^1.9.5",
     "@tailwindcss/postcss": "^4.1.8",
     "firebase": "^11.8.1",
+    "moment": "^2.30.1",
     "razorpay": "^2.9.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
