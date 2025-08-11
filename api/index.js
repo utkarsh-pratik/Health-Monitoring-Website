@@ -19,7 +19,7 @@ const httpServer = createServer(app);
 
 const allowedOrigins = [
   "http://localhost:5173", // Development frontend
-  "https://health-monitoring-website.vercel.app/" // Production frontend
+  "https://health-monitoring-website.vercel.app" // Production frontend
 ];
 
 const corsOptions = {
