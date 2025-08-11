@@ -20,6 +20,13 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 const app = express();
 const httpServer = createServer(app);
 
+// --- Health Check Route ---
+// IMPORTANT: This MUST be defined before any CORS middleware.
+// This route will be used by Render for health checks.
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // --- CORS Configuration ---
 const allowedOrigins = [
   "http://localhost:5173",
