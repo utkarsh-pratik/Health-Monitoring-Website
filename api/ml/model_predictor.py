@@ -12,6 +12,7 @@ import re
 import io
 import mimetypes
 import traceback
+from pdfminer.high_level import extract_text as pdf_extract_text
 
 # Ensure proper stdout encoding
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -34,19 +35,7 @@ LABEL_ENCODER_PATH = os.path.join(script_dir, '..', 'label_encoder.joblib')
 # pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 def is_pdf(file_path):
-    ext = os.path.splitext(file_path)[-1].lower()
-    mime, _ = mimetypes.guess_type(file_path)
-    if ext == ".pdf" or mime == "application/pdf":
-        return True
-    # Check file header for PDF magic number '%PDF'
-    try:
-        with open(file_path, "rb") as f:
-            header = f.read(4)
-            if header == b"%PDF":
-                return True
-    except Exception:
-        pass
-    return False
+    return os.path.splitext(file_path)[1].lower() == ".pdf"
 
 def extract_text(path):
     try:
@@ -54,10 +43,12 @@ def extract_text(path):
 
         if is_pdf(path):
             print("📄 Detected PDF. Converting to images...", file=sys.stderr)
-            # FIX: Removed the poppler_path argument
-            pages = convert_from_path(path)
-            print(f"✅ Converted {len(pages)} page(s) to images.", file=sys.stderr)
-            text = "\n".join(pytesseract.image_to_string(img) for img in pages)
+            # Pure-Python PDF text extraction (works on Render without apt-get)
+            text = pdf_extract_text(path) or ""
+            if not text.strip():
+                # Optional fallback to OCR when the PDF has no text layer
+                # Remove these two lines if you want to skip OCR fallback
+                text = ""
         else:
             print("🖼️ Detected image file. Extracting text...", file=sys.stderr)
             try:
