@@ -51,7 +51,7 @@ const DoctorNotifications = () => {
       if (Notification.permission === "granted") {
         new Notification("New Appointment Request", {
           body: `${data.patientName} has requested an appointment`,
-          icon: "/icons/appointment-success.png"
+          icon: ""
         });
       }
     });
@@ -79,7 +79,7 @@ const DoctorNotifications = () => {
       if (Notification.permission === "granted") {
         new Notification("Payment Received", {
           body: `Payment of ₹${data.amount} received from ${data.patientName}`,
-          icon: "/icons/payment-success.png"
+          icon: ""
         });
       }
     });

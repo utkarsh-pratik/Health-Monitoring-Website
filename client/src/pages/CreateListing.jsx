@@ -51,6 +51,7 @@ const CreateListing = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDoctor(docRes.data);
+        localStorage.setItem('doctorId', docRes.data._id);
         setForm({
           ...docRes.data,
           name: docRes.data.name || userRes.data.name,

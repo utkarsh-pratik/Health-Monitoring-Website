@@ -116,21 +116,19 @@ export const verifyPayment = async (req, res) => {
     appointment.paymentId = razorpay_payment_id;
     await doctor.save();
 
-    // Send notification to doctor about successful payment
+    // notify doctor in real-time
     const io = req.app.get('io');
     const doctorSockets = req.app.get('doctorSockets');
-    const doctorSocketIds = doctorSockets[doctor.userRef?.toString()];
-    
-    if (doctorSocketIds && doctorSocketIds.length > 0) {
-      doctorSocketIds.forEach(socketId => {
-        io.to(socketId).emit('paymentReceived', {
-          appointmentId: appointmentId,
-          patientName: appointment.patientName,
-          amount: appointment.amount,
-          paymentId: razorpay_payment_id,
-        });
+    const doctorId = doctor._id.toString();
+    const sockets = doctorSockets[doctorId] || [];
+    sockets.forEach((sid) => {
+      io.to(sid).emit('paymentReceived', {
+        patientName: appointment.patientName,
+        amount: appointment.amount,
+        paymentId: razorpay_payment_id,
+        appointmentId: appointment._id,
       });
-    }
+    });
 
     res.json({
       success: true,

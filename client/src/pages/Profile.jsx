@@ -45,6 +45,7 @@ const Profile = () => {
           setPatient(patientRes.data);
           setForm(patientRes.data);
           setPhotoPreview(patientRes.data.photo || defaultAvatar);
+          localStorage.setItem('patientId', patientRes.data._id);
         }
       } catch (err) {
         setError("Failed to fetch profile.");

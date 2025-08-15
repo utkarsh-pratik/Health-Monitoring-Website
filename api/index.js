@@ -55,7 +55,30 @@ const io = new Server(httpServer, {
 const doctorSockets = {};
 const patientSockets = {};
 io.on('connection', (socket) => {
-  // ... (your existing socket registration and disconnect logic)
+  console.log('🔌 connected:', socket.id);
+
+  socket.on('registerDoctor', (doctorId) => {
+    if (!doctorId) return;
+    if (!doctorSockets[doctorId]) doctorSockets[doctorId] = [];
+    if (!doctorSockets[doctorId].includes(socket.id)) {
+      doctorSockets[doctorId].push(socket.id);
+    }
+  });
+
+  socket.on('registerPatient', (patientId) => {
+    if (!patientId) return;
+    patientSockets[patientId] = socket.id; // single latest socket per patient
+  });
+
+  socket.on('disconnect', () => {
+    Object.keys(doctorSockets).forEach((id) => {
+      doctorSockets[id] = doctorSockets[id].filter(sid => sid !== socket.id);
+      if (doctorSockets[id].length === 0) delete doctorSockets[id];
+    });
+    Object.keys(patientSockets).forEach((id) => {
+      if (patientSockets[id] === socket.id) delete patientSockets[id];
+    });
+  });
 });
 
 // Make socket instance available to routes

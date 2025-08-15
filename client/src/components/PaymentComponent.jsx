@@ -51,7 +51,7 @@ const PaymentComponent = ({ appointmentId, doctorName, amount, onSuccess, onClos
               if (Notification.permission === 'granted') {
                 new Notification('Payment Successful!', {
                   body: `Payment of ₹${amount} completed successfully`,
-                  icon: '/icons/payment-success.png',
+                  icon: "",
                 });
               }
               

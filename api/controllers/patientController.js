@@ -18,45 +18,43 @@ export const bookAppointment = async (req, res) => {
     const { patientName, patientContact, appointmentTime, reason } = req.body;
 
     if (!patientName || !patientContact || !appointmentTime) {
-      return res.status(400).json({ message: 'All fields are required.' });
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const apptDate = new Date(appointmentTime);
+    if (Number.isNaN(apptDate.getTime()) || apptDate <= new Date()) {
+      return res.status(400).json({ message: "Invalid or past appointment time." });
     }
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+
+    const dayName = apptDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const daySlot = (doctor.availability || []).find(d => d.day === dayName);
+    const timeStr = apptDate.toTimeString().slice(0, 5); // "HH:MM"
+    const fits = daySlot && daySlot.slots.some(s => s.start <= timeStr && s.end > timeStr);
+    if (!fits) {
+      return res.status(400).json({ message: "Selected time is not within doctor's availability." });
+    }
 
     doctor.appointments.push({
-      patientName,
-      patientContact,
-      appointmentTime: new Date(appointmentTime),
-      reason,
-      patientRef: req.user._id,
+      patientName, patientContact, appointmentTime: apptDate, reason, patientRef: req.user._id,
     });
-
     await doctor.save();
 
-    // --- Socket.IO Notification to Doctor ---
     const io = req.app.get("io");
     const doctorSockets = req.app.get("doctorSockets");
     const doctorSocketIds = doctorSockets[doctorId];
-    console.log('[NOTIFY] doctorId:', doctorId, 'doctorSocketIds:', doctorSocketIds);
     if (doctorSocketIds && doctorSocketIds.length > 0) {
       doctorSocketIds.forEach(socketId => {
-        io.to(socketId).emit("newAppointment", {
-          patientName,
-          appointmentTime: new Date(appointmentTime),
-          reason,
-        });
+        io.to(socketId).emit("newAppointment", { patientName, appointmentTime: apptDate, reason });
       });
-      console.log('[NOTIFY] Emitted newAppointment to doctor', doctorId);
-    } else {
-      console.log('[NOTIFY] No socketId found for doctor', doctorId);
     }
-    // --- End Notification ---
 
-    res.status(201).json({ message: 'Appointment booked successfully' });
+    return res.status(201).json({ message: "Appointment booked successfully" });
   } catch (err) {
-    console.error('Booking error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Booking error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -418,4 +416,3 @@ const command = `python3 "${scriptPath}" "${filePath}"`;
     }
   });
 };
-

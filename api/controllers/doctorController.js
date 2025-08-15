@@ -209,16 +209,36 @@ export const getScheduledAppointments = async (req, res) => {
 // Set availability for the logged-in doctor
 export const setAvailability = async (req, res) => {
   try {
+    const availability = req.body?.availability;
+    if (!Array.isArray(availability)) {
+      return res.status(400).json({ message: "availability must be an array" });
+    }
+
+    const allowedDays = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+    const normalized = availability.map(d => ({
+      day: allowedDays.includes(d.day) ? d.day : null,
+      slots: Array.isArray(d.slots)
+        ? d.slots.filter(s => s && s.start && s.end).map(s => ({
+            start: String(s.start).slice(0,5),
+            end: String(s.end).slice(0,5),
+          }))
+        : []
+    })).filter(d => d.day && d.slots.length > 0);
+
+    if (normalized.length === 0) {
+      return res.status(400).json({ message: "No valid day/slots provided" });
+    }
+
     const doctor = await Doctor.findOne({ userRef: req.user._id });
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // Expecting availability in req.body.availability (array of slots)
-    doctor.availability = req.body.availability;
+    doctor.availability = normalized;
     await doctor.save();
 
-    res.json({ message: "Availability updated successfully", availability: doctor.availability });
+    return res.json({ message: "Availability updated successfully", availability: doctor.availability });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("setAvailability error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -234,17 +254,19 @@ export const updateAppointmentStatus = async (req, res) => {
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
     appointment.status = status || appointment.status;
-    if (reason) appointment.reason = reason;
-    
-    // If appointment is confirmed, set the amount and payment status
+
+    if (status === 'Cancelled') {
+      appointment.rejectionReason = reason || appointment.rejectionReason || 'Cancelled';
+    }
+
     if (status === 'Confirmed') {
       appointment.amount = doctor.consultationFees;
       appointment.paymentStatus = 'Pending';
+      appointment.rejectionReason = ''; // clear any previous reason
     }
-    
+
     await doctor.save();
 
-    // --- Socket.IO Notification to Patient ---
     const io = req.app.get("io");
     const patientSockets = req.app.get("patientSockets");
     const patientId = appointment.patientRef?.toString();
@@ -252,17 +274,17 @@ export const updateAppointmentStatus = async (req, res) => {
     if (patientSocketId) {
       io.to(patientSocketId).emit("appointmentStatus", {
         status: appointment.status,
-        reason: appointment.reason,
+        reason: appointment.rejectionReason || '',
         doctorName: doctor.name,
         appointmentTime: appointment.appointmentTime,
         paymentRequired: status === 'Confirmed',
         amount: appointment.amount,
       });
     }
-    // --- End Notification ---
 
     res.json({ message: "Appointment status updated", appointment });
   } catch (error) {
+    console.error('updateAppointmentStatus error:', error);
     res.status(500).json({ message: "Server error" });
   }
 };
