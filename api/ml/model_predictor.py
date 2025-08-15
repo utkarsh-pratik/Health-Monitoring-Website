@@ -35,31 +35,34 @@ LABEL_ENCODER_PATH = os.path.join(script_dir, '..', 'label_encoder.joblib')
 # pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 def is_pdf(file_path):
-    return os.path.splitext(file_path)[1].lower() == ".pdf"
+    try:
+        with open(file_path, "rb") as f:
+            header = f.read(5)
+            return header.startswith(b"%PDF")
+    except Exception:
+        return False
 
 def extract_text(path):
     try:
         print(f"📁 File received: {path}", file=sys.stderr)
-
         if is_pdf(path):
-            print("📄 Detected PDF. Converting to images...", file=sys.stderr)
-            # Pure-Python PDF text extraction (works on Render without apt-get)
+            print("📄 Detected PDF. Extracting text...", file=sys.stderr)
             text = pdf_extract_text(path) or ""
-            if not text.strip():
-                # Optional fallback to OCR when the PDF has no text layer
-                # Remove these two lines if you want to skip OCR fallback
-                text = ""
         else:
             print("🖼️ Detected image file. Extracting text...", file=sys.stderr)
             try:
                 image = Image.open(path)
                 text = pytesseract.image_to_string(image)
             except UnidentifiedImageError:
-                raise Exception("Unrecognized image format. Ensure it is a valid image or PDF.")
+                # Fallback: some PDFs may slip past detection; try pdfminer
+                try:
+                    print("↩️ PIL failed. Trying PDF text extraction fallback...", file=sys.stderr)
+                    text = pdf_extract_text(path) or ""
+                except Exception:
+                    raise Exception("Unrecognized image format. Ensure it is a valid image or PDF.")
 
-        print("🔍 OCR Text Preview:\n", text[:300], "...", file=sys.stderr)
+        print("🔍 OCR/Text Preview:\n", (text or "")[:300], "...", file=sys.stderr)
         return text
-
     except Exception as e:
         print(json.dumps({
             "error": f"Failed to extract text from file: {str(e)}",
