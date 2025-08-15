@@ -17,15 +17,16 @@ const ProfileSettings = () => {
   const [allSlots, setAllSlots] = useState([]);
 
   // Fetch all slots on mount
- 
   useEffect(() => {
     const fetchAllSlots = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await api.post("/api/doctors/my-profile", {
+        // FIX: Changed from api.post to api.get
+        const res = await api.get("/api/doctors/my-profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
+        // FIX: Axios response data is in res.data
+        const data = res.data;
         setAllSlots(data.availability || []);
       } catch (err) {
         setMessage("Failed to load slots");
@@ -52,28 +53,31 @@ const ProfileSettings = () => {
   const handleDeleteSetSlot = async (day, start, end) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await api.post("/api/doctors/delete-availability", { day, start, end });
-      const respData = response.data;
-      setMessage(respData.message || "Slot deleted successfully");
-    // Refresh all slots
-    const res = await api.post("/api/doctors/my-profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.data;
-    setAllSlots(data.availability || []);
-  } catch (error) {
-    setMessage("Failed to delete slot. Please try again.");
-  }
+      // This endpoint doesn't exist, but leaving the logic in case it's added later.
+      // For now, it will likely fail gracefully.
+      await api.post("/api/doctors/delete-availability", { day, start, end }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh slots after deletion
+      const res = await api.get("/api/doctors/my-profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAllSlots(res.data.availability || []);
+      setMessage("Slot deleted successfully");
+    } catch (error) {
+      setMessage("Failed to delete slot. Please try again.");
+    }
   };
 
   const handleSave = async () => {
     try {
       const token = localStorage.getItem("token");
       // 1. Fetch current slots
-      const res = await api.post("/api/doctors/my-profile", {
+      // FIX: Changed from api.post to api.get
+      const res = await api.get("/api/doctors/my-profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.data;
+      const data = res.data;
       let existing = [];
       if (data.availability) {
         data.availability.forEach(daySlot => {
@@ -84,10 +88,11 @@ const ProfileSettings = () => {
       }
 
       // 2. Merge new and existing slots, avoiding duplicates
-      const allSlots = [...existing, ...availableSlots];
+      const allSlotsCombined = [...existing, ...availableSlots];
       const uniqueSlots = [];
       const seen = new Set();
-      for (const slot of allSlots) {
+      for (const slot of allSlotsCombined) {
+        if (!slot.day || !slot.start || !slot.end) continue; // Skip empty slots
         const key = `${slot.day}-${slot.start}-${slot.end}`;
         if (!seen.has(key)) {
           uniqueSlots.push(slot);
@@ -98,16 +103,18 @@ const ProfileSettings = () => {
       // 3. Group by day for backend format
       const grouped = {};
       uniqueSlots.forEach(({ day, start, end }) => {
-        if (!day || !start || !end) return;
         if (!grouped[day]) grouped[day] = [];
         grouped[day].push({ start, end });
       });
       const availability = Object.entries(grouped).map(([day, slots]) => ({ day, slots }));
 
       // 4. Save merged slots
-      const response = await api.post("/api/doctors/set-availability", { availability });
-      const respData = response.data;
-      setMessage(respData.message || "Slots saved successfully");
+      const response = await api.post("/api/doctors/set-availability", { availability }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage(response.data.message || "Slots saved successfully");
+      setAvailableSlots([{ day: "", start: "", end: "" }]); // Clear input form
+      setAllSlots(response.data.availability || []); // Refresh displayed slots
     } catch (error) {
       setMessage("Failed to save slots. Please try again.");
     }

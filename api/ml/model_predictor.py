@@ -54,7 +54,8 @@ def extract_text(path):
 
         if is_pdf(path):
             print("📄 Detected PDF. Converting to images...", file=sys.stderr)
-            pages = convert_from_path(path, poppler_path=POPPLER_PATH)
+            # FIX: Removed the poppler_path argument
+            pages = convert_from_path(path)
             print(f"✅ Converted {len(pages)} page(s) to images.", file=sys.stderr)
             text = "\n".join(pytesseract.image_to_string(img) for img in pages)
         else:
