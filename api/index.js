@@ -96,7 +96,6 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/payment", paymentRoutes);
 
-import express from "express";
 const apptRouter = express.Router();
 apptRouter.get("/getmyappointments", authenticate, getMyAppointments);
 apptRouter.post("/book-appointment/:doctorId", authenticate, bookAppointment);
