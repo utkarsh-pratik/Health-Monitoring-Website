@@ -273,7 +273,7 @@ export const addDoctorToFavorites = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    patient.favorites = [...(patient.favorites || []), doctor._id];
+    patient.favorites.push(doctor._id);
     await patient.save();
 
     res.json({ success: true, message: "Doctor added to favorites" });
@@ -352,8 +352,9 @@ export const updatePatientProfile = async (req, res) => {
   
     // If photo uploaded, set photo field
     // javascript
-  if (req.file?.path) {
-    updates.photo = req.file.path; // Cloudinary secure URL
+  if (req.file) {
+    const url = req.file.path || req.file.secure_url || req.file.url;
+    if (url) updates.photo = url;
   }
   const patient = await Patient.findByIdAndUpdate(
     req.user._id,

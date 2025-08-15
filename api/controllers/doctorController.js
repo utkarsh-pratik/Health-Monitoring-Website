@@ -91,7 +91,10 @@ export const updateDoctorProfile = async (req, res) => {
     updates.languages = Array.isArray(languages)
       ? languages
       : (typeof languages === "string" ? languages.split(",").map(x => x.trim()).filter(Boolean) : []);
-    if (req.file?.path) updates.imageUrl = req.file.path;
+    if (req.file) {
+      const url = req.file.path || req.file.secure_url || req.file.url;
+      if (url) updates.imageUrl = url;
+    }
 
     const doctor = await Doctor.findOneAndUpdate(
       { userRef: req.user._id },
