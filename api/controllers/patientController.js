@@ -20,7 +20,6 @@ export const bookAppointment = async (req, res) => {
     if (!patientName || !patientContact || !appointmentTime) {
       return res.status(400).json({ message: "All fields are required." });
     }
-
     const apptDate = new Date(appointmentTime);
     if (Number.isNaN(apptDate.getTime()) || apptDate <= new Date()) {
       return res.status(400).json({ message: "Invalid or past appointment time." });
@@ -29,32 +28,27 @@ export const bookAppointment = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    const dayName = apptDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayName = apptDate.toLocaleDateString("en-US", { weekday: "long" });
     const daySlot = (doctor.availability || []).find(d => d.day === dayName);
-    const timeStr = apptDate.toTimeString().slice(0, 5); // "HH:MM"
+    const timeStr = apptDate.toTimeString().slice(0, 5);
     const fits = daySlot && daySlot.slots.some(s => s.start <= timeStr && s.end > timeStr);
     if (!fits) {
       return res.status(400).json({ message: "Selected time is not within doctor's availability." });
     }
 
-    doctor.appointments.push({
-      patientName, patientContact, appointmentTime: apptDate, reason, patientRef: req.user._id,
-    });
+    doctor.appointments.push({ patientName, patientContact, appointmentTime: apptDate, reason, patientRef: req.user._id });
     await doctor.save();
 
     const io = req.app.get("io");
     const doctorSockets = req.app.get("doctorSockets");
-    const doctorSocketIds = doctorSockets[doctorId];
-    if (doctorSocketIds && doctorSocketIds.length > 0) {
-      doctorSocketIds.forEach(socketId => {
-        io.to(socketId).emit("newAppointment", { patientName, appointmentTime: apptDate, reason });
-      });
-    }
+    (doctorSockets[doctorId] || []).forEach(sid => {
+      io.to(sid).emit("newAppointment", { patientName, appointmentTime: apptDate, reason });
+    });
 
-    return res.status(201).json({ message: "Appointment booked successfully" });
+    res.status(201).json({ message: "Appointment booked successfully" });
   } catch (err) {
     console.error("Booking error:", err);
-    return res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -114,7 +108,7 @@ export const getMyAppointments = async (req, res) => {
 
 
 export const postHistory = async (req, res) => {
-  const { answers } = req.body;
+  const { answers, history } = req.body;
   const patientId = req.user._id;
 
   console.log("Patient ID:", patientId);
@@ -138,22 +132,35 @@ export const postHistory = async (req, res) => {
       // Create new Patient entry
       patient = new Patient({
         _id: user._id,
+        userRef: user._id,            // ensure consistent lookups
         name: user.name,
         email: user.email,
         contact: user.contact,
-        medicalHistory: formattedHistory,
+        medicalHistory: [],
       });
-
       console.log("🆕 Created new patient record.");
+    } if (answers && typeof answers === 'object') {
+      const formatted = Object.entries(answers).map(([question, answer]) => ({
+        question,
+        answer,
+        createdAt: new Date(),
+      }));
+      patient.medicalHistory = formatted;
+    } else if (typeof history === 'string' && history.trim()) {
+      patient.medicalHistory = [
+        ...(patient.medicalHistory || []),
+        { question: "Patient Notes", answer: history.trim(), createdAt: new Date() },
+      ];
     } else {
-      // If exists, update medical history
-      patient.medicalHistory = formattedHistory;
-      console.log("✏️ Updated existing patient record.");
+      return res.status(400).json({ message: "Provide either answers or history text." });
     }
 
     await patient.save();
-    res.status(200).json({ message: "Medical history saved successfully." });
-
+    return res.status(200).json({
+      message: "Medical history saved successfully.",
+      history: patient.medicalHistory,
+    });
+    
   } catch (error) {
     console.error("❌ Save error:", error);
     res.status(500).json({ error: "Failed to save medical history." });
@@ -252,56 +259,53 @@ export const postHistory = async (req, res) => {
 
 
 export const addDoctorToFavorites = async (req, res) => {
-  const { doctorId } = req.body; // doctorId from body
-  const patientId = req.user._id; // Logged-in patient's ID from JWT
-
-  console.log('Received doctorId:', doctorId);
-  console.log('Patient ID from JWT:', patientId);
-
   try {
-    // Validate doctorId
-    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
-      console.log('Invalid doctor ID');
-      return res.status(400).json({ message: 'Invalid doctor ID' });
-    }
+    const { doctorId } = req.body;
+    if (!doctorId) return res.status(400).json({ message: "Doctor ID is required." });
 
-    // Find the patient by ID
-    console.log('Searching for patient with ID:', patientId);
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      console.log('Patient not found');
-      return res.status(404).json({ message: 'Patient not found' });
-    }
+    const patient = await Patient.findById(req.user._id);
+    if (!patient) return res.status(404).json({ message: "Patient not found" });
 
-    // Log patient favorites for debugging
-    console.log('Patient favorites before adding doctor:', patient.favorites);
+    // dedupe using string compare (ObjectId vs string)
+    const already = (patient.favorites || []).some(id => id.toString() === doctorId);
+    if (already) return res.status(400).json({ message: "Doctor is already in favorites" });
 
-    // Check if the doctor is already in the patient's favorites
-    if (patient.favorites.includes(doctorId)) {
-      console.log('Doctor is already in favorites');
-      return res.status(400).json({ message: 'Doctor is already in favorites' });
-    }
-
-    // Find the doctor (optional check)
-    console.log('Searching for doctor with ID:', doctorId);
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) {
-      console.log('Doctor not found');
-      return res.status(404).json({ message: 'Doctor not found' });
-    }
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // Add doctor to favorites
-    patient.favorites.push(doctorId);
-    console.log('Adding doctor to favorites');
+    patient.favorites = [...(patient.favorites || []), doctor._id];
     await patient.save();
 
-    // Log the updated patient favorites
-    console.log('Patient favorites after adding doctor:', patient.favorites);
-
-    res.status(200).json({ success: true, message: 'Doctor added to favorites' });
+    res.json({ success: true, message: "Doctor added to favorites" });
   } catch (error) {
-    console.error('Error adding doctor to favorites:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Add favorite error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getFavorites = async (req, res) => {
+  try {
+    const patient = await Patient.findById(req.user._id)
+      .populate("favorites", "name specialty imageUrl consultationFees qualifications yearsOfExperience clinicName clinicAddress awards services");
+    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    res.json({ favorites: patient.favorites || [] });
+  } catch (e) {
+    console.error("Get favorites error:", e);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const removeDoctorFromFavorites = async (req, res) => {
+  try {
+    const { doctorId } = req.body;
+    const patient = await Patient.findById(req.user._id);
+    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    patient.favorites = (patient.favorites || []).filter(id => id.toString() !== doctorId);
+    await patient.save();
+    res.json({ success: true, message: "Doctor removed from favorites" });
+  } catch (e) {
+    console.error("Remove favorite error:", e);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -341,16 +345,16 @@ export const updatePatientProfile = async (req, res) => {
   delete updates.role;
 
   // Remove gender if empty or invalid
-const allowedGenders = ["Male", "Female", "Other"];
-if (!allowedGenders.includes(updates.gender)) {
-  delete updates.gender;
-}
-
-  // If photo uploaded, set photo field
-  if (req.file && req.file.path) {
-    updates.photo = req.file.path;
+  const allowedGenders = ["Male", "Female", "Other"];
+  if (!allowedGenders.includes(updates.gender)) {
+    delete updates.gender;
   }
-
+  
+    // If photo uploaded, set photo field
+    // javascript
+  if (req.file?.path) {
+    updates.photo = req.file.path; // Cloudinary secure URL
+  }
   const patient = await Patient.findByIdAndUpdate(
     req.user._id,
     updates,
@@ -358,7 +362,7 @@ if (!allowedGenders.includes(updates.gender)) {
   );
   if (!patient) return res.status(404).json({ message: "Patient not found" });
   res.json(patient);
-};
+  };
 
 // import path from "path";
 // import { exec } from "child_process";

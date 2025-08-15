@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FaHeart, FaRegHeart } from 'react-icons/fa'; // Import React Icons
-import axios from 'axios';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import notsuccess from '../assets/notifysuccess.png';
-import noterror from '../assets/notifyerror.png';
 import api from '../api';
 //import DoctorFlipCard from '../components/DoctorFlipCard';
 
@@ -26,7 +23,7 @@ const BookAppointment = () => {
   });
 
   const [loading, setLoading] = useState(false); // Loading state for doctors
-  const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('favorites')) || []); // State to manage favorites
+  const [favorites, setFavorites] = useState([]); // start empty
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10)); // "YYYY-MM-DD"
   const [doctorSlots, setDoctorSlots] = useState([]); // [{start, end}]
@@ -80,17 +77,14 @@ const BookAppointment = () => {
   };
 
   // Add doctor to favorites in localStorage
-  const addToFavorites = (doctor) => {
-    let updatedFavorites = [...favorites];
-    if (!updatedFavorites.some((fav) => fav._id === doctor._id)) {
-      updatedFavorites.push(doctor);
-      setFavorites(updatedFavorites); // Update state
-      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
-    } else {
-      updatedFavorites = updatedFavorites.filter((fav) => fav._id !== doctor._id); // Remove from favorites
-      setFavorites(updatedFavorites);
-      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
-    }
+  const addToFavorites = async (doctor) => {
+    try {
+      const token = localStorage.getItem("token");
+      await api.post("/api/patient/favorites/add", { doctorId: doctor._id }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFavorites(prev => prev.some(f => f._id === doctor._id) ? prev : [...prev, doctor]);
+    } catch (e) { console.error("Add favorite failed", e); }
   };
 
   // Check if doctor is in favorites
@@ -118,17 +112,14 @@ const BookAppointment = () => {
       await api.post(
         `/api/appointments/book-appointment/${selectedDoctor._id}`,
         { ...form, appointmentTime },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          ContentType: 'application/json',
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Show success notification if permission granted
       if (Notification.permission === 'granted') {
         new Notification('Appointment booked!', {
           body: `Your appointment with Dr. ${selectedDoctor.name} is confirmed.`,
-          icon: notsuccess,
+          icon: "",
         });
       } else {
         alert('Appointment booked!');
@@ -144,13 +135,25 @@ const BookAppointment = () => {
       if (Notification.permission === 'granted') {
         new Notification('Booking failed', {
           body: 'There was an error booking your appointment. Please try again.',
-          icon: noterror,
+          icon: "",
         });
       } else {
         alert('Booking failed. Please try again.');
       }
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await api.get('/api/patient/favorites', { headers: { Authorization: `Bearer ${token}` } });
+        setFavorites(res.data.favorites || []);
+      } catch (e) {
+        console.error('Failed to load favorites', e);
+      }
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-950 to-black py-16 px-6 md:px-12 font-sans">
@@ -223,7 +226,7 @@ const BookAppointment = () => {
                 className="cursor-pointer bg-black bg-opacity-40 rounded-3xl shadow-lg shadow-purple-900/60 hover:shadow-purple-700/80 transform hover:-translate-y-4 transition-transform duration-300 border border-purple-700"
               >
                 <img
-                  src={doc.imageUrl || '/default-doctor.jpg'}
+                  src={doc.imageUrl || 'https://api.dicebear.com/7.x/adventurer/svg?seed=doctor'}
                   alt={doc.name}
                   className="rounded-t-3xl h-56 w-full object-cover border-b border-purple-700"
                 />
@@ -282,7 +285,7 @@ const BookAppointment = () => {
                 {/* Doctor Info */}
                 <div className="flex items-center gap-4 mb-6">
                   <img
-                    src={selectedDoctor.imageUrl || "/default-doctor.jpg"}
+                    src={selectedDoctor.imageUrl || 'https://api.dicebear.com/7.x/adventurer/svg?seed=doctor'}
                     alt={selectedDoctor.name}
                     className="w-16 h-16 rounded-full border-4 border-purple-200 shadow-lg object-cover"
                   />

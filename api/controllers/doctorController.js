@@ -70,68 +70,39 @@ export const getMyProfile = async (req, res) => {
 };
 
 // UPDATE doctor profile for logged-in doctor
+// javascript
 export const updateDoctorProfile = async (req, res) => {
   try {
-    console.log("Updating doctor profile for user:", req.user._id);
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file);
-
     const {
-      name, 
-      specialty, description, consultationFees,
+      name, specialty, description, consultationFees,
       qualifications, yearsOfExperience, contactNumber,
       clinicName, clinicAddress, registrationNumber,
       gender, languages, linkedIn, awards, services
     } = req.body;
 
     const updates = {
-      specialty,
-      description,
-      consultationFees,
-      qualifications,
-      yearsOfExperience,
-      contactNumber,
-      clinicName,
-      clinicAddress,
-      registrationNumber,
-      gender,
-      linkedIn,
-      awards,
-      services,
+      name, specialty, description, consultationFees,
+      qualifications, yearsOfExperience, contactNumber,
+      clinicName, clinicAddress, registrationNumber,
+      linkedIn, awards, services,
     };
-
-    const allowedGenders = ["Male", "Female", "Other"];
-if (!allowedGenders.includes(updates.gender)) {
-  delete updates.gender;
-}
-
-    // Handle languages as array
+    const allowedGenders = ["Male","Female","Other"];
+    if (allowedGenders.includes(gender)) updates.gender = gender;
     updates.languages = Array.isArray(languages)
       ? languages
-      : (typeof languages === "string"
-          ? languages.split(",").map(l => l.trim()).filter(Boolean)
-          : []);
-
-    // If image uploaded
-    if (req.file && req.file.path) {
-      updates.imageUrl = req.file.path;
-    }
+      : (typeof languages === "string" ? languages.split(",").map(x => x.trim()).filter(Boolean) : []);
+    if (req.file?.path) updates.imageUrl = req.file.path;
 
     const doctor = await Doctor.findOneAndUpdate(
       { userRef: req.user._id },
       updates,
       { new: true, runValidators: true }
     );
-    if (!doctor) {
-      console.log("No doctor found for userRef:", req.user._id);
-      return res.status(404).json({ message: "Doctor profile not found" });
-    }
+    if (!doctor) return res.status(404).json({ message: "Doctor profile not found" });
     res.json(doctor);
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ message: error.message });
-    }
-    res.status(500).json({ message: "Failed to create doctor profile" });
+  } catch (e) {
+    if (e.name === "ValidationError") return res.status(400).json({ message: e.message });
+    res.status(500).json({ message: "Failed to update doctor profile" });
   }
 };
 
@@ -213,12 +184,11 @@ export const setAvailability = async (req, res) => {
     if (!Array.isArray(availability)) {
       return res.status(400).json({ message: "availability must be an array" });
     }
-
     const allowedDays = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
     const normalized = availability.map(d => ({
       day: allowedDays.includes(d.day) ? d.day : null,
       slots: Array.isArray(d.slots)
-        ? d.slots.filter(s => s && s.start && s.end).map(s => ({
+        ? d.slots.filter(s => s?.start && s?.end).map(s => ({
             start: String(s.start).slice(0,5),
             end: String(s.end).slice(0,5),
           }))
@@ -234,11 +204,10 @@ export const setAvailability = async (req, res) => {
 
     doctor.availability = normalized;
     await doctor.save();
-
-    return res.json({ message: "Availability updated successfully", availability: doctor.availability });
+    res.json({ message: "Availability updated successfully", availability: doctor.availability });
   } catch (error) {
     console.error("setAvailability error:", error);
-    return res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 

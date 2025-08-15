@@ -53,16 +53,25 @@ const ProfileSettings = () => {
   const handleDeleteSetSlot = async (day, start, end) => {
     try {
       const token = localStorage.getItem("token");
-      // This endpoint doesn't exist, but leaving the logic in case it's added later.
-      // For now, it will likely fail gracefully.
-      await api.post("/api/doctors/delete-availability", { day, start, end }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Refresh slots after deletion
+      // get current
       const res = await api.get("/api/doctors/my-profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setAllSlots(res.data.availability || []);
+      const data = res.data;
+      const current = (data.availability || []).map(d => ({
+        day: d.day,
+        slots: (d.slots || []).map(s => ({ start: s.start, end: s.end }))
+      }));
+      // remove target slot
+      const updated = current.map(d => ({
+        ...d,
+        slots: d.slots.filter(s => !(s.start === start && s.end === end))
+      })).filter(d => d.slots.length > 0);
+      // save back
+      const saveRes = await api.post("/api/doctors/set-availability", { availability: updated }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAllSlots(saveRes.data.availability || []);
       setMessage("Slot deleted successfully");
     } catch (error) {
       setMessage("Failed to delete slot. Please try again.");

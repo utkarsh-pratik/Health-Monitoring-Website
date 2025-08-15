@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../api'; 
-
-const socket = io(SOCKET_URL);
+import socket from '../socket';
 
 const DoctorNotifications = () => {
   const [notifications, setNotifications] = useState(() => {
@@ -49,10 +46,8 @@ const DoctorNotifications = () => {
 
       // Show browser notification if permission granted
       if (Notification.permission === "granted") {
-        new Notification("New Appointment Request", {
-          body: `${data.patientName} has requested an appointment`,
-          icon: ""
-        });
+        const message = `${data.patientName} has requested an appointment`;
+        new Notification("Appointment Update", { body: message, icon: "" });
       }
     });
 

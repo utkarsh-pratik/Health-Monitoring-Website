@@ -9,12 +9,15 @@ import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
+import { authenticate } from "./middlewares/authMiddleware.js";
+import { bookAppointment, getMyAppointments } from "./controllers/patientController.js";
 
 // Import your routes
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import reminderScheduler from "./reminderScheduler.js";
 
 // --- Primary Setup ---
 const app = express();
@@ -92,15 +95,28 @@ app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/payment", paymentRoutes);
-app.use("/api/appointments", patientRoutes);
+
+import express from "express";
+const apptRouter = express.Router();
+apptRouter.get("/getmyappointments", authenticate, getMyAppointments);
+apptRouter.post("/book-appointment/:doctorId", authenticate, bookAppointment);
+app.use("/api/appointments", apptRouter);
 
 // --- Database Connection & Server Start ---
-mongoose
-  .connect(process.env.MONGODB_URL)
+mongoose.connect(process.env.MONGODB_URL)
   .then(() => {
-    console.log('✅ MongoDB Connected');
+    const { host, name } = mongoose.connection;
+    console.log(`✅ MongoDB Connected -> host: ${host}, db: ${name}`);
     httpServer.listen(process.env.PORT || 5000, "0.0.0.0", () => {
       console.log(`✅ Server running on port ${process.env.PORT || 5000}`);
+      try {
+        reminderScheduler();
+      } catch (e) {
+        console.error("❌ Failed to start reminder scheduler:", e);
+      }
     });
   })
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err);
+    process.exit(1);
+  });

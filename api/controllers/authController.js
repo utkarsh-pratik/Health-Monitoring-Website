@@ -2,7 +2,7 @@ import dotenv from "dotenv";  // ✅ Import dotenv at the top
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { Contact } from "lucide-react";
+//import { Contact } from "lucide-react";
 
 dotenv.config(); // ✅ Load environment variables after importing dotenv
 

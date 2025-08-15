@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DashboardDropdown from "../components/dashboardDropdown";
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../api'; 
-const socket = io(SOCKET_URL);
+import socket from '../socket';
 
-const PatientHome = () => {
+const Header1 = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem('patientNotifications');
@@ -68,7 +66,7 @@ const PatientHome = () => {
       if (Notification.permission === "granted") {
         new Notification("Appointment Update", {
           body: message,
-          icon: data.status === 'Confirmed' ? "/icons/appointment-success.png" : "/icons/appointment-error.png"
+          icon: ""
         });
       }
     });
@@ -121,7 +119,7 @@ const PatientHome = () => {
           <Link
             to="/profile"
             className="hover:text-white transition duration-200"
-            aria-current={location.pathname === "/patient/home" ? "page" : undefined}
+            aria-current={location.pathname === "/profile" ? "page" : undefined}
           >
             Profile
           </Link>
@@ -231,4 +229,4 @@ const PatientHome = () => {
   );
 };
 
-export default PatientHome;
+export default Header1;

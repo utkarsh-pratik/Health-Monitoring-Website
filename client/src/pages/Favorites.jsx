@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; 
-import notsuccess from '/src/assets/notifysuccess.png';  // Replace with your success notification icon path
-import noterror from '/src/assets/notifyerror.png';  // Replace with your error notification icon path
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import api from '../api';
 
@@ -22,8 +19,15 @@ const FavoritesPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
-    setFavorites(storedFavorites);
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await api.get('/api/patient/favorites', { headers: { Authorization: `Bearer ${token}` } });
+        setFavorites(res.data.favorites || []);
+      } catch (e) {
+        console.error('Failed to load favorites', e);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -39,10 +43,24 @@ const FavoritesPage = () => {
     fetchSlots();
   }, [selectedDoctor, selectedDate]);
 
-  const handleRemoveFromFavorites = (doctorId) => {
-    const updatedFavorites = favorites.filter((doctor) => doctor._id !== doctorId);
-    setFavorites(updatedFavorites);
-    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+  const addToFavorites = async (doctor) => {
+    try {
+      const token = localStorage.getItem('token');
+      await api.post('/api/patient/favorites/add', { doctorId: doctor._id }, { headers: { Authorization: `Bearer ${token}` } });
+      setFavorites(prev => prev.some(f => f._id === doctor._id) ? prev : [...prev, doctor]);
+    } catch (e) {
+      console.error('Add favorite failed', e);
+    }
+  };
+
+  const handleRemoveFromFavorites = async (doctorId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await api.post('/api/patient/favorites/remove', { doctorId }, { headers: { Authorization: `Bearer ${token}` } });
+      setFavorites(prev => prev.filter(d => d._id !== doctorId));
+    } catch (e) {
+      console.error('Remove favorite failed', e);
+    }
   };
 
   const handleBookAppointment = (doctor) => {
@@ -82,10 +100,7 @@ const FavoritesPage = () => {
       await api.post(
         `/api/appointments/book-appointment/${selectedDoctor._id}`,
         { ...form, appointmentTime },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          ContentType: 'application/json',
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Show success notification if permission granted
@@ -136,7 +151,7 @@ const FavoritesPage = () => {
               className="cursor-pointer bg-black bg-opacity-40 rounded-3xl shadow-lg shadow-purple-900/60 hover:shadow-purple-700/80 transform hover:-translate-y-4 transition-transform duration-300 border border-purple-700"
             >
               <img
-                src={doc.imageUrl || '/default-doctor.jpg'}
+                src={doc.imageUrl || 'https://api.dicebear.com/7.x/adventurer/svg?seed=doctor'}
                 alt={doc.name}
                 className="rounded-t-3xl h-56 w-full object-cover border-b border-purple-700"
               />
@@ -194,7 +209,7 @@ const FavoritesPage = () => {
                 {/* Doctor Info */}
                 <div className="flex items-center gap-4 mb-6">
                   <img
-                    src={selectedDoctor.imageUrl || "/default-doctor.jpg"}
+                    src={selectedDoctor.imageUrl || 'https://api.dicebear.com/7.x/adventurer/svg?seed=doctor'}
                     alt={selectedDoctor.name}
                     className="w-16 h-16 rounded-full border-4 border-purple-200 shadow-lg object-cover"
                   />

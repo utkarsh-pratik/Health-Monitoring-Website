@@ -41,6 +41,10 @@ const sendReminderEmail = async (email, name, time, doctor, hours) => {
 };
 
 const reminderScheduler = () => {
+  if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_EMAIL) {
+    console.warn('⚠️ Reminder scheduler disabled: missing SENDGRID envs');
+    return;
+  }
   cron.schedule('* * * * *', async () => {
     const now = moment().tz('Asia/Kolkata');
 

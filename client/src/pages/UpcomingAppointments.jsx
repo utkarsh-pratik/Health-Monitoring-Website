@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import PaymentComponent from '../components/PaymentComponent';
 import api from '../api';
 
@@ -129,7 +128,7 @@ const UpcomingAppointments = () => {
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
             {appointments.map((appt) => (
               <li
-                key={appt._id}
+                key={appt.appointmentId}
                 className="relative bg-white bg-opacity-20 backdrop-blur-md border-l-8 border-gradient-to-b from-pink-400 via-yellow-400 to-green-400 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-transform duration-300 transform hover:-translate-y-2 cursor-pointer text-white drop-shadow-md"
                 style={{ minWidth: '320px' }}
               >
@@ -180,7 +179,7 @@ const UpcomingAppointments = () => {
                   </div>
 
                   {/* Rejection / Cancel Reason */}
-                  {(appt.status === 'Cancelled' || appt.status === 'Rejected') && appt.reason && (
+                  {(appt.status === 'Cancelled' || appt.status === 'Rejected') && appt.rejectionReason && (
                     <div
                       className="relative bg-gradient-to-r from-red-200 via-red-300 to-red-400 text-red-900 p-6 rounded-2xl border-2 border-red-600 shadow-lg shadow-red-500/50 font-semibold animate-pulse hover:scale-[1.05] transition-transform duration-300 ease-in-out cursor-help select-text"
                       title="Reason for cancellation or rejection"

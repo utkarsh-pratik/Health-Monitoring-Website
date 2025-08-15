@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 const medicalHistorySchema = new mongoose.Schema({
   question: { type: String, required: true },
   answer: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now } // add this
 }, { _id: false }); // Don't generate a separate _id for each entry
 
 // Main Patient schema
@@ -25,10 +26,12 @@ const patientSchema = new mongoose.Schema({
     type: String,
     select: false
   },
-   favorites: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Doctor'
-    }],
+  // javascript
+favorites: [{ 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Doctor",
+    default: [] 
+  }],
  
   age: Number,
   gender: {

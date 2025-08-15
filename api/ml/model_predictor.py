@@ -102,7 +102,6 @@ def clean_ocr_text(text):
 
         # General unit fixes
         r"\bpL\b": "µL",
-        r"\bpL\b": "µL",
         r"\bpl\b": "µL",
         r"\bPL\b": "µL",
         r"\byL\b": "µL",
@@ -112,9 +111,9 @@ def clean_ocr_text(text):
         r"μL": "µL",
         r"μl": "µL",
         r"µl": "µL",
-
-        # Remove extra spaces around slashes
-        r"cells\s*/\s*[pPyYμµuU]?[lL]": "cells/µL",  # cells/pL, cells/uL, cells/μL, yL with optional space        r"cells\s*/\s*ul": "cells/µL",
+        # Normalize cell count units
+        r"cells\s*/\s*[pPyYμµuU]?[lL]": "cells/µL",  # cells/pL, cells/uL, cells/μL, yL
+        r"cells\s*/\s*ul": "cells/µL",
         r"cells\s*/\s*µL": "cells/µL",
         r"million\s*/\s*µL": "million/µL",
     }

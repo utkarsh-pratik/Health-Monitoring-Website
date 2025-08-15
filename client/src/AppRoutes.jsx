@@ -4,7 +4,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
 import LandingPage from "./pages/LandingPage";
-import DoctorProfile from "./pages/doctorProfile";
+// import DoctorProfile from "./pages/doctorProfile";
 import ProfileSettings from "./components/ProfileSettings";
 import BookAppointment from "./pages/BookAppointment";
 import CreateListing from "./pages/CreateListing";
@@ -49,7 +49,7 @@ const AppRoutes = () => {
       <Route path="/doctor" element={<DoctorLayout />}>
         <Route path="home" element={<DoctorHome />} />
         <Route path="scheduled-appointments" element={<ScheduledAppointment />}/>  
-        <Route path="/doctor/patienthistory/:id" element={<PatientHistory />} />       
+        <Route path="patienthistory/:id" element={<PatientHistory />} />       
         <Route path="set-availability" element={<ProfileSettings />} />
         <Route path="notifications" element={<DoctorNotifications />} />
         <Route path="about" element={<About />} />

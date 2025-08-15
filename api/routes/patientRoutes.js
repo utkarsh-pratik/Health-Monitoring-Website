@@ -1,30 +1,38 @@
-import express from "express";
-import { bookAppointment } from "../controllers/patientController.js";
+// javascript
+import { Router } from "express";
 import { authenticate } from "../middlewares/authMiddleware.js";
-import {getMyAppointments} from "../controllers/patientController.js";
-import {postHistory} from "../controllers/patientController.js";
-import { analyzeReport } from "../controllers/patientController.js";
-import {addDoctorToFavorites} from "../controllers/patientController.js";
-import { getPatientProfile, updatePatientProfile } from "../controllers/patientController.js";
 import parser from "../middlewares/multerCloudinary.js";
-import localUpload from "../middlewares/localMulter.js";
+import {
+  getPatientProfile,
+  updatePatientProfile,
+  addDoctorToFavorites,
+  getFavorites,
+  removeDoctorFromFavorites,
+  postHistory,
+  bookAppointment,
+  getMyAppointments,
+  analyzeReport,
+} from "../controllers/patientController.js";
 
-const router = express.Router();
+const router = Router();
 
-// Patient books appointment with a doctor
-router.post("/book-appointment/:doctorId",authenticate,bookAppointment);
-router.get("/getmyappointments" , authenticate ,getMyAppointments);
-router.post("/post-history",authenticate,postHistory);
-// Add Doctor to Favorites
-// router.post('/add', authenticate,addToFavorites);
-
-// // Remove Doctor from Favorites
-// router.post('/remove', authenticate,removeFromFavorites);
-
-// // Get All Favorites
-
+// Profile
 router.get("/profile", authenticate, getPatientProfile);
 router.put("/profile", authenticate, parser.single("photo"), updatePatientProfile);
-router.post("/analyze-report", localUpload.single("report"), analyzeReport);
+
+// Favorites
+router.get("/favorites", authenticate, getFavorites);
+router.post("/favorites/add", authenticate, addDoctorToFavorites);
+router.post("/favorites/remove", authenticate, removeDoctorFromFavorites);
+
+// Medical history
+router.post("/post-history", authenticate, postHistory);
+
+// Appointments (patient)
+router.get("/getmyappointments", authenticate, getMyAppointments);
+router.post("/book-appointment/:doctorId", authenticate, bookAppointment);
+
+// ML analyze
+router.post("/analyze-report", authenticate, analyzeReport);
 
 export default router;

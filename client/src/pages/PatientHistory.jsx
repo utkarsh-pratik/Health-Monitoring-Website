@@ -36,30 +36,23 @@ export default function PatientHistory() {
 
   // Handle saving the new or updated history
   const handleSaveHistory = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-
+    e.preventDefault();
     if (!newHistory.trim()) {
       alert('Please provide your medical history');
       return;
     }
-
-    setLoading(true); // Indicate that we're saving the data
-
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const res = await api.post(
-        `/api/doctors/patient-history/${id}`,
-        { history: newHistory }, // Send the new history
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/patient/post-history`,
+        { history: newHistory },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setHistory(res.data.history); // Update the history state with the newly saved data
-      setNewHistory(''); // Reset the form input
-      setIsEditing(false); // Close the form after saving
+      setHistory(res.data.history || []);
+      setNewHistory('');
+      setIsEditing(false);
+      setError(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save medical history.');
     } finally {

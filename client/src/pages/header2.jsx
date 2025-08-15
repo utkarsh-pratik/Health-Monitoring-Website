@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../components/ProfileDropdown';
 import { Link } from 'react-router-dom';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../api'; 
-
-const socket = io(SOCKET_URL);
+import socket from '../socket';
 
 const DoctorHome = () => {
   const navigate = useNavigate();
@@ -176,10 +173,18 @@ const DoctorHome = () => {
       {/* Tailwind nav-link styles */}
       <style>{`
         .nav-link {
-          @apply text-white px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 shadow-md;
+          text-white;
+          padding: 0.5rem 1rem;
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          transition: all 0.2s;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .nav-link:hover {
-          @apply bg-indigo-600 bg-opacity-70 text-yellow-300 shadow-lg;
+          background-color: rgba(75, 85, 99, 0.7);
+          color: #FBBF24;
+          box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
           transform: scale(1.05);
         }
       `}</style>

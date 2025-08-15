@@ -1,6 +1,5 @@
 // src/pages/CreateListing.jsx
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import api from '../api';
 
 const defaultAvatar = "https://api.dicebear.com/7.x/adventurer/svg?seed=doctor";
@@ -50,8 +49,8 @@ const CreateListing = () => {
         const docRes = await api.get("/api/doctors/my-profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setDoctor(docRes.data);
         localStorage.setItem('doctorId', docRes.data._id);
+        setDoctor(docRes.data);
         setForm({
           ...docRes.data,
           name: docRes.data.name || userRes.data.name,
@@ -98,39 +97,24 @@ const CreateListing = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.name.trim()) {
-      setError("Name is required.");
-      setLoading(false);
-      return;
-    }
-    if (
-      !form.name ||
-      !form.specialty ||
-      !form.description ||
-      !form.consultationFees ||
-      (!doctor && !photoFile) // For new profile, image is required
-    ) {
-      setError("Please fill all required fields and upload a profile photo.");
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
     setMsg("");
     setError("");
-    setLoading(true);
     try {
+      if (
+        !form.name || !form.specialty || !form.description || !form.consultationFees ||
+        (!doctor && !photoFile) // image required when creating
+      ) {
+        setError("Please fill in all required fields. Image is required for first-time profile.");
+        setLoading(false);
+        return;
+      }
+  
       const token = localStorage.getItem("token");
       const data = new FormData();
-
-      data.append("name", form.name || "");
-      doctorFields.forEach((field) => {
-        if (field.key === "languages") {
-          data.append("languages", (form.languages || "").split(",").map(l => l.trim()).filter(Boolean));
-        } else if (field.key !== "image" && field.key !== "photo") {
-          data.append(field.key, form[field.key] || "");
-        }
-      });
-      if (photoFile) data.append("image", photoFile);
-
+      Object.entries(form).forEach(([k, v]) => data.append(k, v ?? ""));
+      if (photoFile) data.append("image", photoFile); // doctor image field name
+  
       // If doctor profile exists, update; else, create
       let res;
       try {
@@ -145,12 +129,14 @@ const CreateListing = () => {
         });
         setMsg("Profile created successfully!");
       }
+
       setDoctor(res.data);
       setForm({
         ...res.data,
         languages: res.data.languages ? res.data.languages.join(", ") : "",
       });
       setPhotoPreview(res.data.imageUrl || photoPreview);
+      localStorage.setItem('doctorId', res.data._id);
       setEditMode(false);
       setPhotoFile(null);
     } catch (err) {

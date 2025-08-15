@@ -1,6 +1,5 @@
 // src/components/ScheduledAppointment.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import moment from "moment";
 import api from '../api';
 import {
@@ -101,12 +100,8 @@ const ScheduledAppointment = () => {
     const token = localStorage.getItem("token");
     await api.patch(
       `/api/doctors/appointments/${id}/status`,
-      { status: "Cancelled",
-        reason: cancelReason
-       }, // Send status explicitly
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
+      { status: "Cancelled", reason: cancelReason },
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     setAppointments((prev) =>
       prev.map((appt) =>
@@ -226,7 +221,7 @@ const ScheduledAppointment = () => {
 
             <div className="mt-6 text-right">
               <Link
-                to={`/doctor/patienthistory/${appt.patientRef?._id || "unknown"}`}
+                to={`/doctor/patienthistory/${appt.patientRef || "unknown"}`}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold px-4 py-2 rounded-full shadow-lg transition-all duration-300"
               >
                 <FaInfoCircle />

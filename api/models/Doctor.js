@@ -1,34 +1,20 @@
 import mongoose from 'mongoose';
 
 const appointmentSchema = new mongoose.Schema({
-  patientName: { type: String, required: true, trim: true },
-  patientContact: { type: String, required: true, trim: true },
-  appointmentTime: { type: Date, required: true },
-  reason: { type: String, trim: true },
-  status: {
-    type: String,
-    enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],
-    default: 'Pending',
-  },
-  rejectionReason: { 
-    type: String,
-     trim: true, 
-     default: '' },
+  patientName: String,
+  patientContact: String,
+  appointmentTime: Date,
+  reason: String,
+  status: { type: String, enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed', 'Rejected', 'No-show'], default: 'Pending' },
+  rejectionReason: { type: String, default: '' },
   patientRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  notifiedTwentyFourHours: { type: Boolean, default: false },
-  notifiedOneHour: { type: Boolean, default: false },
-  // Payment related fields
-  paymentStatus: {
-    type: String,
-    enum: ['Pending', 'Paid', 'Failed', 'Refunded'],
-    default: 'Pending',
-  },
+  amount: { type: Number, default: 0 },
+  paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Failed', 'Refunded'], default: 'Pending' },
   paymentId: { type: String, default: '' },
   orderId: { type: String, default: '' },
-  amount: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now },
-});
-
+  notifiedTwentyFourHours: { type: Boolean, default: false },
+  notifiedOneHour: { type: Boolean, default: false },
+}, { timestamps: true });
 
 const timeSlotSchema = new mongoose.Schema({
   day: {
@@ -90,8 +76,8 @@ const doctorSchema = new mongoose.Schema({
   linkedIn: { type: String, trim: true },
   awards: { type: String, trim: true },
   services: { type: String, trim: true },
-  appointments: [appointmentSchema], // Appointments now include patientRef
-  availability: [timeSlotSchema],    // Availability field
+  appointments: [appointmentSchema],
+  availability: [timeSlotSchema],
   createdAt: {
     type: Date,
     default: Date.now,
