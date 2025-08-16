@@ -123,7 +123,7 @@ const FavoritesPage = () => {
       if (Notification.permission === 'granted') {
         new Notification('Booking failed', {
           body: 'There was an error booking your appointment. Please try again.',
-          icon: noterror,
+          icon: "",
         });
       } else {
         alert('Booking failed. Please try again.');

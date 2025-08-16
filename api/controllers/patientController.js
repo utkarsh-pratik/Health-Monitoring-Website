@@ -259,6 +259,7 @@ export const postHistory = async (req, res) => {
 
 
 // javascript
+// javascript
 export const addDoctorToFavorites = async (req, res) => {
   try {
     const { doctorId } = req.body;
@@ -282,7 +283,7 @@ export const addDoctorToFavorites = async (req, res) => {
     patient.favorites.push(doctor._id);
     await patient.save();
 
-    return res.json({ success: true, message: "Doctor added to favorites" });
+    res.json({ success: true, message: "Doctor added to favorites" });
   } catch (error) {
     console.error("Add favorite error:", error);
     res.status(500).json({ message: "Server error" });
@@ -306,8 +307,10 @@ export const removeDoctorFromFavorites = async (req, res) => {
     const { doctorId } = req.body;
     const patient = await Patient.findById(req.user._id);
     if (!patient) return res.status(404).json({ message: "Patient not found" });
+
     patient.favorites = (patient.favorites || []).filter(id => id.toString() !== doctorId);
     await patient.save();
+
     res.json({ success: true, message: "Doctor removed from favorites" });
   } catch (e) {
     console.error("Remove favorite error:", e);
@@ -344,32 +347,51 @@ export const getPatientProfile = async (req, res) => {
 };
 
 // Update patient profile
+// javascript
 export const updatePatientProfile = async (req, res) => {
-  const updates = { ...req.body };
-  delete updates.name;
-  delete updates.email;
-  delete updates.role;
+  try {
+    const updates = { ...req.body };
+    delete updates.name;
+    delete updates.email;
+    delete updates.role;
 
-  // Remove gender if empty or invalid
-  const allowedGenders = ["Male", "Female", "Other"];
-  if (!allowedGenders.includes(updates.gender)) {
-    delete updates.gender;
+    const allowedGenders = ["Male", "Female", "Other"];
+    if (!allowedGenders.includes(updates.gender)) delete updates.gender;
+
+    if (req.file) {
+      const url = req.file.path || req.file.secure_url || req.file.url;
+      if (url) updates.photo = url;
+    }
+
+    // Ensure patient doc exists (upsert)
+    const user = await User.findById(req.user._id).select("name email");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const patient = await Patient.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: updates,
+        $setOnInsert: {
+          _id: user._id,
+          userRef: user._id,
+          name: user.name,
+          email: user.email,
+          medicalHistory: [],
+          favorites: [],
+        }
+      },
+      { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    res.json(patient);
+  } catch (error) {
+    console.error("updatePatientProfile error:", error);
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Failed to update patient profile" });
   }
-  
-    // If photo uploaded, set photo field
-    // javascript
-  if (req.file) {
-    const url = req.file.path || req.file.secure_url || req.file.url;
-    if (url) updates.photo = url;
-  }
-  const patient = await Patient.findByIdAndUpdate(
-    req.user._id,
-    updates,
-    { new: true, runValidators: true }
-  );
-  if (!patient) return res.status(404).json({ message: "Patient not found" });
-  res.json(patient);
-  };
+};
 
 // import path from "path";
 // import { exec } from "child_process";

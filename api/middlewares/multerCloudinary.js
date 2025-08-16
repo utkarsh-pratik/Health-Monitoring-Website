@@ -25,9 +25,8 @@ const parser = multer({
 parser._handleFile = ((orig) => (req, file, cb) => {
   orig.call(parser, req, file, (err, info) => {
     if (err) return cb(err);
-    // Ensure path holds a usable URL
     if (info && !info.path) {
-      info.path = info.secure_url || info.url || '';
+      info.path = info.secure_url || info.url || "";
     }
     cb(null, info);
   });

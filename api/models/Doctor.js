@@ -58,8 +58,7 @@ const doctorSchema = new mongoose.Schema({
   },
   imageUrl: {
     type: String,
-    required: true,
-  },
+    default: "" },
   userRef: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

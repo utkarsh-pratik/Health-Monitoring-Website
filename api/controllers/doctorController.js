@@ -13,7 +13,6 @@ export const createDoctorListing = async (req, res) => {
       gender, languages, linkedIn, awards, services
     } = req.body;
 
-    // Handle languages as array
     const languagesArray = Array.isArray(languages)
       ? languages
       : (typeof languages === "string"
@@ -36,11 +35,10 @@ export const createDoctorListing = async (req, res) => {
       linkedIn,
       awards,
       services,
-      imageUrl: req.file?.path,
+      imageUrl: req.file ? (req.file.path || req.file.secure_url || req.file.url || "") : "",
       userRef: userId,
     };
 
-    // Prevent duplicate listing for same user
     const existing = await Doctor.findOne({ userRef: userId });
     if (existing) {
       return res.status(400).json({ message: "Doctor profile already exists. Please edit your profile instead." });
@@ -50,6 +48,7 @@ export const createDoctorListing = async (req, res) => {
     await doctor.save();
     res.status(201).json(doctor);
   } catch (error) {
+    console.error("createDoctorListing error:", error);
     if (error.name === "ValidationError") {
       return res.status(400).json({ message: error.message });
     }
@@ -60,17 +59,19 @@ export const createDoctorListing = async (req, res) => {
 // GET doctor profile for logged-in doctor
 export const getMyProfile = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ userRef: req.user._id });
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const doctor = await Doctor.findOne({ userRef: req.user._id }).lean();
     if (!doctor) return res.status(404).json({ message: "Doctor profile not found" });
     res.json(doctor);
   } catch (error) {
-    console.error("Error fetching doctor profile:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("getMyProfile error:", error);
+    res.status(500).json({ message: error.message || "Server error" });
   }
 };
 
 // UPDATE doctor profile for logged-in doctor
-// javascript
 export const updateDoctorProfile = async (req, res) => {
   try {
     const {
@@ -86,11 +87,14 @@ export const updateDoctorProfile = async (req, res) => {
       clinicName, clinicAddress, registrationNumber,
       linkedIn, awards, services,
     };
+
     const allowedGenders = ["Male","Female","Other"];
     if (allowedGenders.includes(gender)) updates.gender = gender;
+
     updates.languages = Array.isArray(languages)
       ? languages
       : (typeof languages === "string" ? languages.split(",").map(x => x.trim()).filter(Boolean) : []);
+
     if (req.file) {
       const url = req.file.path || req.file.secure_url || req.file.url;
       if (url) updates.imageUrl = url;
@@ -104,6 +108,7 @@ export const updateDoctorProfile = async (req, res) => {
     if (!doctor) return res.status(404).json({ message: "Doctor profile not found" });
     res.json(doctor);
   } catch (e) {
+    console.error("updateDoctorProfile error:", e);
     if (e.name === "ValidationError") return res.status(400).json({ message: e.message });
     res.status(500).json({ message: "Failed to update doctor profile" });
   }
