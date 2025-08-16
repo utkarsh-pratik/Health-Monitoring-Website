@@ -13,6 +13,7 @@ const patientSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  userRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   name: {
     type: String,
     trim: true
@@ -48,7 +49,7 @@ favorites: [{
   photo: { type: String, default: "" },
 
   // ✅ Corrected here
-  medicalHistory: [medicalHistorySchema],
+  medicalHistory: { type: [medicalHistorySchema], default: [] },
 
   createdAt: {
     type: Date,

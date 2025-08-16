@@ -258,15 +258,21 @@ export const postHistory = async (req, res) => {
 // };
 
 
+// javascript
 export const addDoctorToFavorites = async (req, res) => {
   try {
     const { doctorId } = req.body;
     if (!doctorId) return res.status(400).json({ message: "Doctor ID is required." });
 
-    const patient = await Patient.findById(req.user._id);
-    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    let patient = await Patient.findById(req.user._id);
+    if (!patient) {
+      const user = await User.findById(req.user._id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      patient = await Patient.create({
+        _id: user._id, userRef: user._id, name: user.name, email: user.email, favorites: [],
+      });
+    }
 
-    // dedupe using string compare (ObjectId vs string)
     const already = (patient.favorites || []).some(id => id.toString() === doctorId);
     if (already) return res.status(400).json({ message: "Doctor is already in favorites" });
 
@@ -276,7 +282,7 @@ export const addDoctorToFavorites = async (req, res) => {
     patient.favorites.push(doctor._id);
     await patient.save();
 
-    res.json({ success: true, message: "Doctor added to favorites" });
+    return res.json({ success: true, message: "Doctor added to favorites" });
   } catch (error) {
     console.error("Add favorite error:", error);
     res.status(500).json({ message: "Server error" });
