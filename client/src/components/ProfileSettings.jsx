@@ -112,6 +112,7 @@ const ProfileSettings = () => {
       // 3. Group by day for backend format
       const grouped = {};
       uniqueSlots.forEach(({ day, start, end }) => {
+        if (!day || !start || !end) return;
         if (!grouped[day]) grouped[day] = [];
         grouped[day].push({ start, end });
       });

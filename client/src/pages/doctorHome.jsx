@@ -51,7 +51,7 @@ const DoctorHome = () => {
             icon={<FaUserMd size={32} />}
             title="Profile"
             desc="Edit your profile, availability, and personal settings."
-            link="/doctor/create-listing" 
+            link="/doctor/profile"
           />
           <FeatureCard
             icon={<FaHistory size={32} />}

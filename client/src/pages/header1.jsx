@@ -119,7 +119,7 @@ const Header1 = () => {
           <Link
             to="/profile"
             className="hover:text-white transition duration-200"
-            aria-current={location.pathname === "/profile" ? "page" : undefined}
+            aria-current={location.pathname === "/patient/home" ? "page" : undefined}
           >
             Profile
           </Link>

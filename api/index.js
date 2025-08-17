@@ -17,51 +17,31 @@ import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
-import reminderScheduler from "./reminderScheduler.js";
+import videoCallRoutes from "./routes/videoCallRoutes.js";
+import reminderScheduler from "./reminderScheduler.js"; // Import the reminder scheduler
 
-// --- Primary Setup ---
+import jwt from "jsonwebtoken";
+
 const app = express();
 const httpServer = createServer(app);
-
-// --- Health Check Route ---
-// IMPORTANT: This MUST be defined before any CORS middleware.
-// This route will be used by Render for health checks.
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-// --- CORS Configuration ---
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://health-monitoring-website.vercel.app",
-];
-
-const corsOptions = {
-  origin: allowedOrigins, // Directly pass the array
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Explicitly allow methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Explicitly allow headers
-};
-
-// --- Middleware ---
-// IMPORTANT: This section MUST come before the routes.
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(cookieParser());
-
-// --- Socket.IO Server ---
 const io = new Server(httpServer, {
-  cors: corsOptions, // Use the same CORS options
+  cors: {
+    origin: "http://localhost:5173", // Your React app's URL
+    methods: ["GET", "POST"]
+  }
 });
 
-// Your socket connection logic...
+// Store socket mappings (support multiple sockets per user)
 const doctorSockets = {};
 const patientSockets = {};
-io.on('connection', (socket) => {
-  console.log('🔌 connected:', socket.id);
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  // Handle doctor registration
   socket.on('registerDoctor', (doctorId) => {
-    if (!doctorId) return;
+    console.log('Doctor registered:', doctorId);
     if (!doctorSockets[doctorId]) doctorSockets[doctorId] = [];
     if (!doctorSockets[doctorId].includes(socket.id)) {
       doctorSockets[doctorId].push(socket.id);
@@ -89,33 +69,38 @@ app.set('io', io);
 app.set('doctorSockets', doctorSockets);
 app.set('patientSockets', patientSockets);
 
-// --- API Routes ---
-// This section MUST come AFTER the middleware.
+app.use(cors());
+app.use(express.json());
+
+// Middleware to authenticate and populate req.user
+
+
+// Public routes (no token needed)
+app.use("/api/appointments" , patientRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/doctors", doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/video-call", videoCallRoutes);
 
-const apptRouter = express.Router();
-apptRouter.get("/getmyappointments", authenticate, getMyAppointments);
-apptRouter.post("/book-appointment/:doctorId", authenticate, bookAppointment);
-app.use("/api/appointments", apptRouter);
 
-// --- Database Connection & Server Start ---
-mongoose.connect(process.env.MONGODB_URL)
-  .then(() => {
-    const { host, name } = mongoose.connection;
-    console.log(`✅ MongoDB Connected -> host: ${host}, db: ${name}`);
-    httpServer.listen(process.env.PORT || 5000, "0.0.0.0", () => {
-      console.log(`✅ Server running on port ${process.env.PORT || 5000}`);
-      try {
-        reminderScheduler();
-      } catch (e) {
-        console.error("❌ Failed to start reminder scheduler:", e);
-      }
-    });
+// Protected routes (token required)
+// Doctor routes (auth handled inside doctorRoutes.js)
+app.use("/api/doctors", doctorRoutes);
+
+  //app.use("/api/appointments", doctorRoutes);
+
+mongoose
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
   })
-  .catch((err) => {
-    console.error("❌ MongoDB Connection Error:", err);
-    process.exit(1);
-  });
+  .then(() => {
+    console.log('✅ MongoDB Connected');
+   reminderScheduler(); // start the cron reminders after DB is connected...............................................................................
+  })
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+const PORT = process.env.PORT || 5000;
+httpServer.listen(PORT, "0.0.0.0", () =>
+  console.log(`✅ Server running on http://localhost:${PORT}`)
+);

@@ -35,7 +35,8 @@ export default function PatientHistory() {
 
   // Handle saving the new or updated history
   const handleSaveHistory = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission
+
     if (!newHistory.trim()) {
       alert('Please provide your medical history');
       return;

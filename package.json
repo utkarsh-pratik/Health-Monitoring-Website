@@ -39,13 +39,14 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.0",
     "socket.io": "^4.8.1",
-    "swiper": "^11.2.1"
+    "swiper": "^11.2.1",
+    "twilio": "^5.8.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react-swc": "^3.10.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.7",
-    "vite": "^5.3.1"
+    "vite": "^6.0.11"
   }
 }

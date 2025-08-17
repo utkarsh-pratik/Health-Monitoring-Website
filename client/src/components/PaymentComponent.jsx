@@ -47,6 +47,8 @@ const PaymentComponent = ({ appointmentId, doctorName, amount, onSuccess, onClos
             );
 
             if (verifyResponse.data.success) {
+              console.log('Payment verification successful:', verifyResponse.data);
+              
               // Show success notification
               if (Notification.permission === 'granted') {
                 new Notification('Payment Successful!', {
@@ -57,6 +59,7 @@ const PaymentComponent = ({ appointmentId, doctorName, amount, onSuccess, onClos
               
               onSuccess(response.razorpay_payment_id);
             } else {
+              console.error('Payment verification failed:', verifyResponse.data);
               setError('Payment verification failed');
             }
           } catch (error) {

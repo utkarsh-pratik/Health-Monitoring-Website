@@ -59,7 +59,10 @@ const PatientNotifications = () => {
 
       // Show browser notification if permission granted
       if (Notification.permission === "granted") {
-        new Notification("Appointment Update", { body: message, icon: "" });
+        new Notification("Appointment Update", {
+          body: message,
+          icon: data.status === 'Confirmed' ? "/icons/appointment-success.png" : "/icons/appointment-error.png"
+        });
       }
     });
 

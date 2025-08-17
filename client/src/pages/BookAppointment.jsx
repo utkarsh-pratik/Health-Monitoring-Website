@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { FaHeart, FaRegHeart } from 'react-icons/fa'; // Import React Icons
 import api from '../api';
+import { useNavigate } from 'react-router-dom';
+import notsuccess from '../assets/notifysuccess.png';
+import noterror from '../assets/notifyerror.png';
 //import DoctorFlipCard from '../components/DoctorFlipCard';
 
 const BookAppointment = () => {
@@ -23,7 +25,7 @@ const BookAppointment = () => {
   });
 
   const [loading, setLoading] = useState(false); // Loading state for doctors
-  const [favorites, setFavorites] = useState([]); // start empty
+  const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('favorites')) || []); // State to manage favorites
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10)); // "YYYY-MM-DD"
   const [doctorSlots, setDoctorSlots] = useState([]); // [{start, end}]
@@ -77,14 +79,17 @@ const BookAppointment = () => {
   };
 
   // Add doctor to favorites in localStorage
-  const addToFavorites = async (doctor) => {
-    try {
-      const token = localStorage.getItem("token");
-      await api.post("/api/patient/favorites/add", { doctorId: doctor._id }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setFavorites(prev => prev.some(f => f._id === doctor._id) ? prev : [...prev, doctor]);
-    } catch (e) { console.error("Add favorite failed", e); }
+  const addToFavorites = (doctor) => {
+    let updatedFavorites = [...favorites];
+    if (!updatedFavorites.some((fav) => fav._id === doctor._id)) {
+      updatedFavorites.push(doctor);
+      setFavorites(updatedFavorites); // Update state
+      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
+    } else {
+      updatedFavorites = updatedFavorites.filter((fav) => fav._id !== doctor._id); // Remove from favorites
+      setFavorites(updatedFavorites);
+      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
+    }
   };
 
   // Check if doctor is in favorites

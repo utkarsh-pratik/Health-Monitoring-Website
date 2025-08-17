@@ -2,9 +2,9 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
-import Signup from "./pages/SignUp";
+import Signup from "./pages/Signup";
 import LandingPage from "./pages/LandingPage";
-// import DoctorProfile from "./pages/doctorProfile";
+import DoctorProfile from "./pages/doctorProfile";
 import ProfileSettings from "./components/ProfileSettings";
 import BookAppointment from "./pages/BookAppointment";
 import CreateListing from "./pages/CreateListing";
@@ -23,6 +23,7 @@ import PatientDashboard from "./components/patientDashboard";
 import ScheduledAppointment from "./pages/scheduledAppointments";
 import PatientHistory from "./pages/PatientHistory";
 import Analyze from "./pages/Analyze";
+import VideoCallPage from "./pages/VideoCallPage";
 import { useState, useEffect } from "react";
 
 
@@ -60,7 +61,7 @@ const AppRoutes = () => {
       <Route path="/patient" element={<PatientLayout />}>
         <Route path="home" element={<PatientHome />} />
         <Route path="appointments" element={<BookAppointment />} />
-        <Route path="profile" element={<Profile />} /> {/* <-- MOVE THIS LINE HERE */}
+        <Route path="profile" element={<Profile />} /> 
         <Route  path="post-history" element={<PatientDashboard />} />
         <Route path="analyze-report" element={<Analyze />} />
         <Route path="favorites" element={<Favorite />} />
@@ -73,6 +74,9 @@ const AppRoutes = () => {
       {/* Auth and other routes without layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/video-call/:appointmentId" element={<VideoCallPage />} />
+  
+      
 
       {/* Fallback: redirect unknown routes to root */}
       <Route path="*" element={<Navigate to="/" replace />} />

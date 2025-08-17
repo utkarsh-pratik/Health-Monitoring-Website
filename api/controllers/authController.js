@@ -2,7 +2,7 @@ import dotenv from "dotenv";  // ✅ Import dotenv at the top
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-//import { Contact } from "lucide-react";
+import { Contact } from "lucide-react";
 
 dotenv.config(); // ✅ Load environment variables after importing dotenv
 
@@ -90,7 +90,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { _id: user._id, role: user.role, name: user.name, contact: user.email }, 
       process.env.JWT_SECRET, 
-      { expiresIn: "1h" }
+      { expiresIn: "7d" } // Extended to 7 days for better user experience
     );
 
     let doctorId = null;

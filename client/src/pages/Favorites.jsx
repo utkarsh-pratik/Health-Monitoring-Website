@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import api from '../api';
+import notsuccess from '/src/assets/notifysuccess.png';  // Replace with your success notification icon path
+import noterror from '/src/assets/notifyerror.png';  // Replace with your error notification icon path
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState([]);
@@ -19,15 +21,8 @@ const FavoritesPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    (async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await api.get('/api/patient/favorites', { headers: { Authorization: `Bearer ${token}` } });
-        setFavorites(res.data.favorites || []);
-      } catch (e) {
-        console.error('Failed to load favorites', e);
-      }
-    })();
+    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
+    setFavorites(storedFavorites);
   }, []);
 
   useEffect(() => {
