@@ -237,22 +237,30 @@ export const postHistory = async (req, res) => {
 export const addDoctorToFavorites = async (req, res) => {
   try {
     const { doctorId } = req.body;
-    if (!doctorId) return res.status(400).json({ message: "Doctor ID is required." });
+    if (!doctorId) {
+      return res.status(400).json({ message: "Doctor ID is required." });
+    }
 
     let patient = await Patient.findById(req.user._id);
     if (!patient) {
+      // This logic to create a patient if one doesn't exist is correct.
       const user = await User.findById(req.user._id);
       if (!user) return res.status(404).json({ message: "User not found" });
       patient = await Patient.create({ _id: user._id, userRef: user._id, name: user.name, email: user.email });
     }
 
     const alreadyFavorited = patient.favorites.some(id => id.toString() === doctorId);
-    if (alreadyFavorited) return res.status(400).json({ message: "Doctor is already in favorites" });
+    if (alreadyFavorited) {
+      return res.status(400).json({ message: "Doctor is already in favorites" });
+    }
 
+    // THE CRITICAL FIX: Push the doctorId directly, not the doctor object.
     patient.favorites.push(doctorId);
     await patient.save();
+
     res.json({ success: true, message: "Doctor added to favorites" });
   } catch (error) {
+    console.error("Add favorite error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -311,49 +319,28 @@ export const getPatientProfile = async (req, res) => {
   res.json(patient);
 };
 
-// Update patient profile
-// javascript
+// api/controllers/patientController.js
 export const updatePatientProfile = async (req, res) => {
   try {
     const updates = { ...req.body };
-    delete updates.name;
+    delete updates.name; // Name and email are synced from the User model
     delete updates.email;
     delete updates.role;
 
-    const allowedGenders = ["Male", "Female", "Other"];
-    if (!allowedGenders.includes(updates.gender)) delete updates.gender;
-
     if (req.file) {
-      const url = req.file.path || req.file.secure_url || req.file.url;
-      if (url) updates.photo = url;
+      updates.photo = req.file.path || req.file.secure_url || req.file.url;
     }
 
-    // Ensure patient doc exists (upsert)
-    const user = await User.findById(req.user._id).select("name email");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const patient = await Patient.findByIdAndUpdate(req.user._id, { $set: updates }, {
+      new: true,
+      runValidators: true,
+    });
 
-    const patient = await Patient.findByIdAndUpdate(
-      req.user._id,
-      {
-        $set: updates,
-        $setOnInsert: {
-          _id: user._id,
-          userRef: user._id,
-          name: user.name,
-          email: user.email,
-          medicalHistory: [],
-          favorites: [],
-        }
-      },
-      { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true }
-    );
-
+    if (!patient) {
+      return res.status(404).json({ message: "Patient profile not found." });
+    }
     res.json(patient);
   } catch (error) {
-    console.error("updatePatientProfile error:", error);
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ message: error.message });
-    }
     res.status(500).json({ message: "Failed to update patient profile" });
   }
 };

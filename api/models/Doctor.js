@@ -37,10 +37,15 @@ const timeSlotSchema = new mongoose.Schema({
 });
 
 const doctorSchema = new mongoose.Schema({
+  _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // CRITICAL FIX: This is the primary key
   name: {
     type: String,
     required: true,
     trim: true,
+  },
+  imageUrl: {
+    type: String,
+    default: "",
   },
   specialty: {
     type: String,
@@ -55,10 +60,6 @@ const doctorSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0,
-  },
-  imageUrl: {
-    type: String,
-    default: "",
   },
   userRef: {
     type: mongoose.Schema.Types.ObjectId,
@@ -83,6 +84,13 @@ const doctorSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, { _id: false }); // CRITICAL FIX: Disable auto-generation of a new _id
+
+doctorSchema.pre('save', function(next) {
+  if (this.isNew) {
+    this._id = this.get('_id');
+  }
+  next();
 });
 
 export default mongoose.model('Doctor', doctorSchema);

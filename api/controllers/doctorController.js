@@ -8,28 +8,40 @@ export const createDoctorListing = async (req, res) => {
     const userId = req.user._id;
     const { name, specialty, description, consultationFees } = req.body;
 
-    // Server-side validation for required fields
+    // 1. Server-side validation for required fields
     if (!name || !specialty || !description || !consultationFees) {
       return res.status(400).json({ message: "Name, specialty, description, and consultation fees are required." });
     }
 
+    // 2. Prevent duplicate profile creation
     const existingProfile = await Doctor.findOne({ userRef: userId });
     if (existingProfile) {
       return res.status(400).json({ message: "Doctor profile already exists. Please edit instead." });
     }
 
+    // 3. Construct the doctor data, including the image URL
     const doctorData = { ...req.body, userRef: userId };
+
+    // THIS IS THE CRITICAL FIX:
+    // Correctly get the URL from the uploaded file and add it to the data
     if (req.file) {
-      doctorData.imageUrl = req.file.path || req.file.secure_url || req.file.url;
+      const imageUrl = req.file.path || req.file.secure_url || req.file.url;
+      if (imageUrl) {
+        doctorData.imageUrl = imageUrl;
+      }
     }
 
+    // 4. Create and save the new doctor document
     const doctor = new Doctor(doctorData);
     await doctor.save();
     res.status(201).json(doctor);
+
   } catch (error) {
+    // 5. Handle any validation or server errors gracefully
     if (error.name === "ValidationError") {
       return res.status(400).json({ message: error.message });
     }
+    console.error("createDoctorListing error:", error);
     res.status(500).json({ message: "Failed to create doctor profile" });
   }
 };
