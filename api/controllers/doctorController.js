@@ -181,29 +181,31 @@ export const getScheduledAppointments = async (req, res) => {
 // Set availability for the logged-in doctor
 export const setAvailability = async (req, res) => {
   try {
-    const availability = req.body?.availability;
-    if (!Array.isArray(availability)) {
-      return res.status(400).json({ message: "availability must be an array" });
-    }
-    const allowedDays = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-    const normalized = availability.map(d => ({
-      day: allowedDays.includes(d.day) ? d.day : null,
-      slots: Array.isArray(d.slots)
-        ? d.slots.filter(s => s?.start && s?.end).map(s => ({
-            start: String(s.start).slice(0,5),
-            end: String(s.end).slice(0,5),
-          }))
-        : []
-    })).filter(d => d.day && d.slots.length > 0);
-
-    if (normalized.length === 0) {
-      return res.status(400).json({ message: "No valid day/slots provided" });
+    const newAvailability = req.body?.availability;
+    if (!Array.isArray(newAvailability) || newAvailability.length === 0) {
+      return res.status(400).json({ message: "No new availability slots provided" });
     }
 
     const doctor = await Doctor.findOne({ userRef: req.user._id });
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    doctor.availability = normalized;
+    // FIX: Additive logic instead of overwriting
+    newAvailability.forEach(newDaySlot => {
+      const existingDay = doctor.availability.find(d => d.day === newDaySlot.day);
+      if (existingDay) {
+        // Add new slots to the existing day, avoiding duplicates
+        newDaySlot.slots.forEach(newSlot => {
+          const slotExists = existingDay.slots.some(s => s.start === newSlot.start && s.end === newSlot.end);
+          if (!slotExists) {
+            existingDay.slots.push(newSlot);
+          }
+        });
+      } else {
+        // Add the new day and its slots
+        doctor.availability.push(newDaySlot);
+      }
+    });
+
     await doctor.save();
     res.json({ message: "Availability updated successfully", availability: doctor.availability });
   } catch (error) {
@@ -238,19 +240,32 @@ export const updateAppointmentStatus = async (req, res) => {
     await doctor.save();
 
     const io = req.app.get("io");
-    const patientSockets = req.app.get("patientSockets");
+    // FIX: Use the unified 'userSockets' map
+    const userSockets = req.app.get("userSockets"); 
     const patientId = appointment.patientRef?.toString();
-    const patientSocketId = patientSockets[patientId];
-    if (patientSocketId) {
-      io.to(patientSocketId).emit("appointmentStatus", {
-        status: appointment.status,
-        reason: appointment.rejectionReason || '',
-        doctorName: doctor.name,
-        appointmentTime: appointment.appointmentTime,
-        paymentRequired: status === 'Confirmed',
-        amount: appointment.amount,
+
+    if (patientId && userSockets[patientId]) {
+      // FIX: Loop through all sockets for the given patientId
+      userSockets[patientId].forEach(socketId => {
+        io.to(socketId).emit("appointmentStatus", {
+          status: appointment.status,
+          reason: appointment.rejectionReason || '',
+          doctorName: doctor.name,
+          appointmentTime: appointment.appointmentTime,
+          paymentRequired: status === 'Confirmed',
+          amount: appointment.amount,
+          _id: appointment._id // Send the appointment ID for client-side matching
+        });
       });
     }
+
+    // Example in api/controllers/paymentController.js
+    const userSocketsForDoctor = req.app.get('userSockets');
+    const doctorId = doctor.userRef.toString(); // Assuming doctor model has userRef
+    const sockets = userSocketsForDoctor[doctorId] || [];
+    sockets.forEach((sid) => {
+      io.to(sid).emit('paymentReceived', { /* ... payload */ });
+    });
 
     res.json({ message: "Appointment status updated", appointment });
   } catch (error) {

@@ -18,7 +18,7 @@ const router = express.Router();
 
 // Profile
 router.get("/my-profile", authenticate, getMyProfile);
-router.put("/my-profile", authenticate, parser.single("image"), updateDoctorProfile);
+router.put("/my-profile", authenticate, verifyDoctor, parser.single("image"), updateDoctorProfile);
 router.post("/create-listing", authenticate, parser.single("image"), createDoctorListing);
 
 // Availability

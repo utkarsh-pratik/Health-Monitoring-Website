@@ -35,8 +35,7 @@ export default function PatientHistory() {
 
   // Handle saving the new or updated history
   const handleSaveHistory = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-
+    e.preventDefault();
     if (!newHistory.trim()) {
       alert('Please provide your medical history');
       return;
@@ -44,11 +43,20 @@ export default function PatientHistory() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+
+      // FIX: Send data in the format the backend expects
+      const payload = {
+        answers: {
+          "General Update": newHistory
+        }
+      };
+
       const res = await api.post(
         `/api/patient/post-history`,
-        { history: newHistory },
+        payload, // Use the corrected payload
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       setHistory(res.data.history || []);
       setNewHistory('');
       setIsEditing(false);

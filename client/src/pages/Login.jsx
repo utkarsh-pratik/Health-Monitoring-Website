@@ -1,7 +1,7 @@
 // client/src/pages/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from '../api'; // Correctly imported
+import api from '../api'; 
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -10,40 +10,38 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
-
-        try {
-            // Use the 'api' helper here instead of 'axios'
-            const res = await api.post("/api/auth/login", { email, password });
-            
-            localStorage.setItem("token", res.data.token);
-            localStorage.setItem("role", res.data.user.role);
-            
-            if (res.data.user.role === "doctor" && res.data.user.doctorId) {
-                localStorage.setItem("doctorId", res.data.user.doctorId);
-                console.log("[LOGIN] Set doctorId in localStorage:", res.data.user.doctorId);
-            }
-            if (res.data.user.role === "patient" && res.data.user._id) {
-                localStorage.setItem("patientId", res.data.user._id);
-            }
-
-            if (res.data.user.role === "patient") {
-                navigate("/patient/home");
-            } else if (res.data.user.role === "doctor") {
-                navigate("/doctor/home");
-            } else {
-                setError("Invalid user role");
-            }
-        } catch (error) {
-            console.error("Login Error:", error);
-            setError(error.response?.data?.error || "Invalid credentials");
-        } finally {
-            setLoading(false);
-        }
-    };
+const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.post("/api/auth/login", { email, password });
+      const { token, user } = res.data;
+  
+      // Store common user data
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("userId", user._id);
+      localStorage.setItem("name", user.name);
+  
+      // FIX: Check the user's role and save role-specific IDs
+      if (user.role === 'doctor' && user.doctorId) {
+        localStorage.setItem('doctorId', user.doctorId);
+        navigate("/doctor/home");
+      } else if (user.role === 'patient' && user.patientId) {
+        localStorage.setItem('patientId', user.patientId);
+        navigate("/patient/home");
+      } else {
+        // Fallback or handle case where IDs are missing
+        navigate("/");
+      }
+  
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-900 via-black to-blue-900 p-4">

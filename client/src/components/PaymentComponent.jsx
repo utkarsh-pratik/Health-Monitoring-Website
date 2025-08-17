@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import api from '../api';
 
 const PaymentComponent = ({ appointmentId, doctorName, amount, onSuccess, onClose }) => {

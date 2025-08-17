@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { connect, createLocalVideoTrack } from 'twilio-video';
-import axios from 'axios';
+import api from '../api';
 
 const VideoCall = ({ appointmentId, onEnd }) => {
   const [room, setRoom] = useState(null);
@@ -33,16 +33,16 @@ const VideoCall = ({ appointmentId, onEnd }) => {
 
       // Get room details
       const token = localStorage.getItem('token');
-      const appointmentResponse = await axios.get(
-        `http://localhost:5000/api/video-call/appointment/${appointmentId}`,
+      const appointmentResponse = await api.get(
+        `/api/video-call/appointment/${appointmentId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const { roomName, userName } = appointmentResponse.data;
 
       // Get Twilio token
-      const tokenResponse = await axios.post(
-        'http://localhost:5000/api/video-call/get-twilio-token',
+      const tokenResponse = await api.post(
+        '/api/video-call/get-twilio-token',
         { roomName, userName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -82,7 +82,7 @@ const VideoCall = ({ appointmentId, onEnd }) => {
 
     } catch (err) {
       console.error('Error joining room:', err);
-      setError('Failed to join video call: ' + err.message);
+      setError('Failed to join video call: ' + (err.response?.data?.message || err.message));
       setLoading(false);
     }
   };

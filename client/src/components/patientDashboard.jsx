@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from '../api';
+import { toast } from 'react-hot-toast'; // Make sure you have a Toaster component in your App layout
 
  // ✅ Required to use navigate()
 
@@ -58,15 +59,22 @@ const saveMedicalHistory = async () => {
         },
       }
     );
-    navigate("/patient/home");
-    alert("Medical history saved! Thank you.");
+    
+    // FIX: Use a non-blocking toast notification
+    toast.success("Medical history saved! Thank you.");
+    
+    // Navigate after a short delay to allow the user to see the message
+    setTimeout(() => {
+      navigate("/patient/home");
+    }, 1500);
+
     setCurrentQIndex(0);
     setAnswers({});
    
 
   } catch (err) {
     console.error("Error saving medical history:", err);
-    alert("An error occurred while saving your data.");
+    toast.error("An error occurred while saving your data.");
   }
 };
 

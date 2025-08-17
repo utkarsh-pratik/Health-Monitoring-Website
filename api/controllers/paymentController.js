@@ -130,6 +130,14 @@ export const verifyPayment = async (req, res) => {
       });
     });
 
+    // notify user in real-time
+    const userSockets = req.app.get('userSockets');
+    const doctorId = doctor.userRef.toString(); // Assuming doctor model has userRef
+    const sockets = userSockets[doctorId] || [];
+    sockets.forEach((sid) => {
+      io.to(sid).emit('paymentReceived', { /* ... payload */ });
+    });
+
     res.json({
       success: true,
       message: 'Payment successful',

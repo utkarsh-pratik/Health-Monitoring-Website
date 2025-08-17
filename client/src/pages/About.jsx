@@ -1,7 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const About = () => {
+  const navigate = useNavigate();
+  const role = localStorage.getItem('role');
+  const homePath = role === 'doctor' ? '/doctor/home' : '/patient/home';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white p-10 flex items-center justify-center">
       <div className="max-w-5xl w-full bg-white/10 backdrop-blur-md p-10 rounded-3xl shadow-2xl border border-white/20">
@@ -42,7 +46,7 @@ const About = () => {
         {/* Back to Home Button */}
         <div className="flex justify-center">
           <Link
-            to="/header2"
+            to={homePath}
             className="inline-block bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition transform hover:scale-105"
           >
             ⬅️ Back to Home

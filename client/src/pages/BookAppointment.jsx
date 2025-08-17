@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaHeart, FaRegHeart } from 'react-icons/fa'; // Import React Icons
 import api from '../api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // FIX: Import useLocation to read navigation state
 import notsuccess from '../assets/notifysuccess.png';
 import noterror from '../assets/notifyerror.png';
 //import DoctorFlipCard from '../components/DoctorFlipCard';
@@ -25,7 +25,7 @@ const BookAppointment = () => {
   });
 
   const [loading, setLoading] = useState(false); // Loading state for doctors
-  const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('favorites')) || []); // State to manage favorites
+  const [favorites, setFavorites] = useState([]); // Remove localStorage initialization
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10)); // "YYYY-MM-DD"
   const [doctorSlots, setDoctorSlots] = useState([]); // [{start, end}]
@@ -33,30 +33,40 @@ const BookAppointment = () => {
   const [selectedSlot, setSelectedSlot] = useState(""); // "HH:MM"
 
   const navigate = useNavigate(); // Hook for redirection
+  const location = useLocation(); // FIX: Get location state
 
-  // Fetch doctors based on filters
+  // Fetch both doctors and favorites when the component mounts
   useEffect(() => {
-    const fetchDoctors = async () => {
+    const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const params = {};
-        if (filters.name) params.name = filters.name;
-        if (filters.specialty) params.specialty = filters.specialty;
-        if (filters.maxFee) params.maxFee = filters.maxFee;
-        if (filters.day) params.day = filters.day;
-        if (filters.slotTime) params.slotTime = filters.slotTime;
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
 
-        const res = await api.get('/api/doctors/available', { params });
-        setDoctors(res.data);
+        // Fetch doctors
+        const doctorsRes = await api.get('/api/doctors/available', { params: filters });
+        const fetchedDoctors = doctorsRes.data;
+        setDoctors(doctorsRes.data);
+
+        // Fetch favorites
+        const favoritesRes = await api.get('/api/patient/favorites', { headers });
+        setFavorites(favoritesRes.data.favorites || []);
+
+        if (location.state?.doctorId) {
+          const preselectedDoctor = fetchedDoctors.find(d => d._id === location.state.doctorId);
+          if (preselectedDoctor) {
+            setSelectedDoctor(preselectedDoctor);
+          }
+        }
+
       } catch (err) {
-        console.error('Error fetching doctors:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchDoctors();
-  }, [filters]);
+    fetchInitialData();
+  }, [filters, location.state]);
 
   // Fetch slots for selected doctor and date
   useEffect(() => {
@@ -79,16 +89,21 @@ const BookAppointment = () => {
   };
 
   // Add doctor to favorites in localStorage
-  const addToFavorites = (doctor) => {
-    let updatedFavorites = [...favorites];
-    if (!updatedFavorites.some((fav) => fav._id === doctor._id)) {
-      updatedFavorites.push(doctor);
-      setFavorites(updatedFavorites); // Update state
-      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
-    } else {
-      updatedFavorites = updatedFavorites.filter((fav) => fav._id !== doctor._id); // Remove from favorites
-      setFavorites(updatedFavorites);
-      localStorage.setItem('favorites', JSON.stringify(updatedFavorites)); // Save to localStorage
+  const addToFavorites = async (doctor) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      if (isFavorite(doctor._id)) {
+        // Remove from favorites
+        await api.post('/api/patient/favorites/remove', { doctorId: doctor._id }, { headers });
+        setFavorites(prev => prev.filter(fav => fav._id !== doctor._id));
+      } else {
+        // Add to favorites
+        await api.post('/api/patient/favorites/add', { doctorId: doctor._id }, { headers });
+        setFavorites(prev => [...prev, doctor]);
+      }
+    } catch (e) {
+      console.error('Favorite update failed', e);
     }
   };
 
@@ -114,8 +129,9 @@ const BookAppointment = () => {
 
     try {
       const token = localStorage.getItem('token');
+      // FIX: Corrected the API endpoint from '/api/appointments' to '/api/patient'
       await api.post(
-        `/api/appointments/book-appointment/${selectedDoctor._id}`,
+        `/api/patient/book-appointment/${selectedDoctor._id}`,
         { ...form, appointmentTime },
         { headers: { Authorization: `Bearer ${token}` } }
       );

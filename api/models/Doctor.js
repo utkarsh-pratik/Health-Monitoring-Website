@@ -37,36 +37,17 @@ const timeSlotSchema = new mongoose.Schema({
 });
 
 const doctorSchema = new mongoose.Schema({
-  _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // CRITICAL FIX: This is the primary key
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  imageUrl: {
-    type: String,
-    default: "",
-  },
-  specialty: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  consultationFees: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
   userRef: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     unique: true,
     required: true,
   },
+  name: { type: String, required: true, trim: true },
+  imageUrl: { type: String, default: "" },
+  specialty: { type: String, required: true, trim: true },
+  description: { type: String, required: true },
+  consultationFees: { type: Number, required: true, min: 0 },
   qualifications: { type: String, trim: true },
   yearsOfExperience: { type: Number, min: 0 },
   contactNumber: { type: String, trim: true },
@@ -80,17 +61,6 @@ const doctorSchema = new mongoose.Schema({
   services: { type: String, trim: true },
   appointments: [appointmentSchema],
   availability: [timeSlotSchema],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-}, { _id: false }); // CRITICAL FIX: Disable auto-generation of a new _id
-
-doctorSchema.pre('save', function(next) {
-  if (this.isNew) {
-    this._id = this.get('_id');
-  }
-  next();
-});
+}, { timestamps: true }); // Add timestamps
 
 export default mongoose.model('Doctor', doctorSchema);

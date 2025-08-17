@@ -17,10 +17,9 @@ const UpcomingAppointments = () => {
   const fetchAppointments = async () => {
     setLoading(true); // Show loading state
     try {
-      const res = await api.get('/api/appointments/getmyappointments', {
+      const res = await api.get('/api/patient/getmyappointments', {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
       });
       setAppointments(res.data);
@@ -277,12 +276,16 @@ const UpcomingAppointments = () => {
 
                     {/* Video Call Button - Only show if payment is completed and appointment time is within range */}
                     {appt.paymentStatus === 'Paid' && (() => {
-                      const appointmentTime = new Date(appt.date);
-                      const timeDiffMinutes = (appointmentTime.getTime() - currentTime.getTime()) / (1000 * 60);
-                      
-                      // Show button 15 minutes before appointment until 2 hours after
-                      const isTimeForCall = timeDiffMinutes <= 15 && timeDiffMinutes >= -120;
-                      
+                      // FIX: Always treat dates as UTC to avoid timezone issues.
+                      // The backend should save appointmentTime in UTC.
+                      const appointmentTimeUTC = new Date(appt.appointmentTime);
+                      const currentTimeUTC = new Date(); // Assume server and client clocks are reasonably synced
+                    
+                      // Perform comparison in minutes
+                      const timeDiffMinutes = (appointmentTimeUTC.getTime() - currentTimeUTC.getTime()) / (1000 * 60);
+                    
+                      const isTimeForCall = timeDiffMinutes <= 15 && timeDiffMinutes >= -120; // 15 mins before, until 2 hours after
+                    
                       if (!isTimeForCall) {
                         return (
                           <div className="w-full mt-3 py-2 px-4 bg-gray-400 text-white font-semibold rounded-lg text-center opacity-75">
@@ -296,7 +299,8 @@ const UpcomingAppointments = () => {
                       
                       return (
                         <button
-                          onClick={() => window.open(`/video-call/${appt.appointmentId}`, '_blank')}
+                          // FIX: Use appt._id, not appt.appointmentId
+                          onClick={() => window.open(`/video-call/${appt._id}`, '_blank')}
                           className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 animate-pulse"
                         >
                           📹 Join Video Call

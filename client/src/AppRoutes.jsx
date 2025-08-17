@@ -11,7 +11,7 @@ import CreateListing from "./pages/CreateListing";
 import About from "./pages/About";
 import DoctorHome from "./pages/doctorHome";
 import PatientHome from "./pages/patientHome";
-import Favorite from "./pages/Favorites";
+import Favorites from "./pages/Favorites"; 
 import Profile from "./pages/Profile";
 import DoctorNotifications from "./pages/DoctorNotifications";
 import PatientNotifications from "./pages/PatientNotifications";
@@ -64,7 +64,7 @@ const AppRoutes = () => {
         <Route path="profile" element={<Profile />} /> 
         <Route  path="post-history" element={<PatientDashboard />} />
         <Route path="analyze-report" element={<Analyze />} />
-        <Route path="favorites" element={<Favorite />} />
+        <Route path="favorites" element={<Favorites />} /> 
         <Route path="about" element={<About />} />
          <Route path="appointments/upcoming" element={<UpcomingAppointments />} />
         <Route path="notifications" element={<PatientNotifications />} />

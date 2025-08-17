@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate, Link } from "react-router-dom"; // Import useNavigate and Link
 
 const LandingPage = () => {
     const navigate = useNavigate(); // Initialize useNavigate
@@ -129,7 +129,7 @@ const LandingPage = () => {
                     </p>
                     <button 
                         className="px-8 py-4 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-lg shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-500 transform hover:scale-105 hover:shadow-orange-500/30"
-                        onClick={() => handleNavigation("/signup")}
+                        onClick={() => navigate("/signup")} // Use navigate for buttons
                     >
                         Get Started Today
                     </button>
@@ -163,10 +163,10 @@ const LandingPage = () => {
                         <div>
                             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
                             <ul className="space-y-2 text-blue-100">
+                                <li><Link to="/about" className="hover:text-orange-400 transition-colors">About Us</Link></li>
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Home</a></li>
-                                <li><a href="#" className="hover:text-orange-400 transition-colors">About Us</a></li>
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Services</a></li>
-                                <li><a href="#" className="hover:text-orange-400 transition-colors">Find a Doctor</a></li>
+                                <li><Link to="/patient/appointments" className="hover:text-orange-400 transition-colors">Find a Doctor</Link></li>
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Health Blog</a></li>
                             </ul>
                         </div>
@@ -177,7 +177,7 @@ const LandingPage = () => {
                             <ul className="space-y-2 text-blue-100">
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Health Monitoring</a></li>
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Online Consultation</a></li>
-                                <li><a href="#" className="hover:text-orange-400 transition-colors">Report Analysis</a></li>
+                                <li><Link to="/patient/analyze" className="hover:text-orange-400 transition-colors">Report Analysis</Link></li>
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Emergency Support</a></li>
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Mental Health</a></li>
                             </ul>

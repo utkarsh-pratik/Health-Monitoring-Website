@@ -49,7 +49,6 @@ const CreateListing = () => {
         const docRes = await api.get("/api/doctors/my-profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        localStorage.setItem('doctorId', docRes.data._id);
         setDoctor(docRes.data);
         setForm({
           ...docRes.data,
@@ -130,7 +129,6 @@ const CreateListing = () => {
         languages: res.data.languages ? res.data.languages.join(", ") : "",
       });
       setPhotoPreview(res.data.imageUrl || defaultAvatar);
-      localStorage.setItem('doctorId', res.data._id);
       setEditMode(false);
       setPhotoFile(null);
     } catch (err) {

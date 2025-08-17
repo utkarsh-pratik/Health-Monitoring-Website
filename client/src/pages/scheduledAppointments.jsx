@@ -24,6 +24,9 @@ const ScheduledAppointments = () => {
   const [paymentFilter, setPaymentFilter] = useState('all'); // 'all', 'paid', 'pending'
   const [currentTime, setCurrentTime] = useState(new Date()); // Track current time for real-time updates
 
+  // client/src/pages/scheduledAppointments.jsx
+
+  // Find the fetchAppointments function and replace it with this:
   const fetchAppointments = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -32,16 +35,17 @@ const ScheduledAppointments = () => {
         return;
       }
 
-      const res = await axios.get(
-        "http://localhost:5000/api/doctors/scheduled-appointments",
+      // FIX: Use the 'api' helper instead of a hardcoded URL
+      const res = await api.get(
+        "/api/doctors/scheduled-appointments",
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
         }
       );
 
+      // The controller now correctly wraps the response
       setAppointments(res.data.appointments);
       setError(null);
     } catch (error) {
@@ -140,50 +144,6 @@ const ScheduledAppointments = () => {
   setLoading(id, false);
 };
 
-
-  // Open reschedule modal
-  // const openReschedule = (appt) => {
-  //   setRescheduleId(appt._id);
-  //   setNewDate(new Date(appt.appointmentTime));
-  // };
-
-  // Confirm reschedule
-  // const confirmReschedule = async () => {
-  //   if (!newDate || newDate < new Date()) {
-  //     alert("Please select a valid future date and time");
-  //     return;
-  //   }
-  //   setLoading(rescheduleId, true);
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     await api.patch(
-  //       `http://localhost:5000/api/doctors/appointments/${rescheduleId}/reschedule`,
-  //       { newTime: newDate.toISOString() },
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-  //     setAppointments((prev) =>
-  //       prev.map((appt) =>
-  //         appt._id === rescheduleId
-  //           ? { ...appt, appointmentTime: newDate.toISOString(), status: "Pending" }
-  //           : appt
-  //       )
-  //     );
-  //     setRescheduleId(null);
-  //   } catch {
-  //     alert("Failed to reschedule appointment");
-  //   }
-  //   setLoading(rescheduleId, false);
-  // };
-
-  // if () {
-  //   return (
-  //     <div className="p-8 text-center text-red-600 font-semibold text-lg bg-red-100 rounded-lg shadow-md">
-  //       {error}
-  //     </div>
-  //   );
-  // }
 
   if (appointments.length === 0) {
     return (
@@ -413,21 +373,30 @@ const ScheduledAppointments = () => {
             <div className="mt-6 text-right">
               <div className="flex gap-2 justify-end">
                 <Link
-                  to={`/doctor/patienthistory/${appt.patientRef?._id || "unknown"}`}
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold px-4 py-2 rounded-full shadow-lg transition-all duration-300"
-                >
-                  <FaInfoCircle />
+                  to={appt.patientRef?._id ? `/doctor/patienthistory/${appt.patientRef._id}` : '#'}
+                  className={`font-semibold py-2 px-4 rounded-lg shadow-md transition ${
+                    !appt.patientRef?._id
+                      ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  }`}
+                  // Prevent clicking if the link is disabled
+                  onClick={(e) => !appt.patientRef?._id && e.preventDefault()}
+                  >
                   View History
-                </Link>
+                  </Link>
                 
                 {/* Video Call Button - Only show if appointment is confirmed, paid, and within time window */}
                 {appt.status === 'Confirmed' && appt.paymentStatus === 'Paid' && (() => {
-                  const appointmentTime = new Date(appt.appointmentTime);
-                  const timeDiffMinutes = (appointmentTime.getTime() - currentTime.getTime()) / (1000 * 60);
-                  
-                  // Show button 15 minutes before appointment until 2 hours after
-                  const isTimeForCall = timeDiffMinutes <= 15 && timeDiffMinutes >= -120;
-                  
+                  // FIX: Always treat dates as UTC to avoid timezone issues.
+                  // The backend should save appointmentTime in UTC.
+                  const appointmentTimeUTC = new Date(appt.appointmentTime);
+                  const currentTimeUTC = new Date(); // Assume server and client clocks are reasonably synced
+
+                  // Perform comparison in minutes
+                  const timeDiffMinutes = (appointmentTimeUTC.getTime() - currentTimeUTC.getTime()) / (1000 * 60);
+
+                  const isTimeForCall = timeDiffMinutes <= 15 && timeDiffMinutes >= -120; // 15 mins before, until 2 hours after
+
                   if (!isTimeForCall) {
                     return (
                       <div className="inline-flex items-center gap-2 bg-gray-400 text-white font-semibold px-4 py-2 rounded-full shadow-lg opacity-75">

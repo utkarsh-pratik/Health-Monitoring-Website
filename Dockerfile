@@ -1,48 +1,22 @@
 # Dockerfile
 
-# Use Node.js version 20 to meet package requirements
-FROM node:20
-
-# Set environment to non-interactive to prevent prompts during build
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install Python, pip, and all necessary system dependencies.
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-dev \
-    git \
-    build-essential \
-    libffi-dev \
-    pkg-config \
-    libjpeg-dev \
-    zlib1g-dev \
-    poppler-utils \
-    tesseract-ocr \
-    gfortran \
-    libopenblas-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set the working directory
-WORKDIR /app
-
-# Copy package files and install Node.js dependencies
-COPY package*.json ./
+# Stage 1: Build the client
+FROM node:18-alpine AS client-builder
+WORKDIR /app/client
+COPY client/package*.json ./
 RUN npm install
+COPY client/ ./
+RUN npm run build
 
-# Copy Python requirements file
-COPY requirements.txt ./
-
-# --- THIS IS THE CRITICAL FIX ---
-# Upgrade Python's build tools before installing packages, breaking the system lock
-RUN pip3 install --upgrade --break-system-packages pip setuptools wheel
-
-# Install Python dependencies
-RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
-
-# Copy the rest of your backend application code
+# Stage 2: Build the server
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --production
 COPY api/ ./api/
+
+# Copy built client from the previous stage
+COPY --from=client-builder /app/client/dist ./client/dist
 
 # Expose the application port
 EXPOSE 5000

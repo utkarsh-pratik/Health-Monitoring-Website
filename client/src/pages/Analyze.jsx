@@ -47,7 +47,7 @@ export default function Analyze() {
 
     try {
       const res = await api.post("/api/patient/analyze-report", formData);
-      // axios wraps the response in a `data` object
+      // wraps the response in a `data` object
       const data = res.data; 
       if (data.error) {
         throw new Error(data.error);
@@ -55,7 +55,12 @@ export default function Analyze() {
 
       setResult(data.severity);
     } catch (err) {
-      setError(err.response?.data?.error || err.message);
+      // FIX: Provide a clearer message for the 503 Service Unavailable error.
+      if (err.response?.status === 503) {
+        setError("This feature is currently under maintenance. Please try again later.");
+      } else {
+        setError(err.response?.data?.error || err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -97,17 +102,7 @@ export default function Analyze() {
     >
       <form
         onSubmit={handleUpload}
-        style={{
-          maxWidth: "450px",
-          width: "100%",
-          backgroundColor: "#1c1033",
-          borderRadius: "16px",
-          padding: "40px 30px",
-          boxShadow: "0 15px 40px rgba(0,0,0,0.7)",
-          textAlign: "center",
-          color: "#eee",
-          zIndex: 2,
-        }}
+        className="relative bg-black bg-opacity-50 backdrop-blur-lg border border-purple-700 rounded-2xl p-10 shadow-2xl text-center text-gray-200 z-10 max-w-lg w-full"
       >
         <h2 style={{ marginBottom: "25px", fontWeight: "700", fontSize: "28px", color: "#d7caff" }}>
           Upload Your Medical Report

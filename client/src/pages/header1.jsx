@@ -5,10 +5,8 @@ import socket from '../socket';
 
 const Header1 = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('patientNotifications');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // FIX: Remove localStorage logic. Start with an empty array.
+  const [notifications, setNotifications] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -23,11 +21,6 @@ const Header1 = () => {
       Notification.requestPermission();
     }
   }, []);
-
-  // Save notifications to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('patientNotifications', JSON.stringify(notifications));
-  }, [notifications]);
 
   // Socket connection for notifications
   useEffect(() => {
@@ -82,7 +75,7 @@ const Header1 = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/login";
+    navigate("/login"); // Use navigate for a smooth transition
   };
 
   return (
@@ -117,9 +110,10 @@ const Header1 = () => {
             Book Appointment
           </Link>
           <Link
-            to="/profile"
+            // FIX: The path should be /patient/profile
+            to="/patient/profile" 
             className="hover:text-white transition duration-200"
-            aria-current={location.pathname === "/patient/home" ? "page" : undefined}
+            aria-current={location.pathname === "/patient/profile" ? "page" : undefined}
           >
             Profile
           </Link>
@@ -193,7 +187,8 @@ const Header1 = () => {
             Book Appointment
           </Link>
           <Link
-            to="/profile"
+            // FIX: The path should be /patient/profile
+            to="/patient/profile"
             className="block text-gray-300 hover:text-white"
             onClick={() => setMenuOpen(false)}
             role="menuitem"
@@ -229,4 +224,4 @@ const Header1 = () => {
   );
 };
 
-export default Header1; // FIX: Was exporting DoctorHome or PatientHome
+export default Header1;

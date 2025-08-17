@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
 import Header1 from './header1';
 import api from '../api';
 
@@ -86,7 +85,7 @@ const Profile = () => {
       fields.forEach((field) => data.append(field.key, form[field.key] || ""));
       if (photoFile) data.append("photo", photoFile);
 
-      const res = await axios.put("/api/patient/profile", data, {
+      const res = await api.put("/api/patient/profile", data, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPatient(res.data);

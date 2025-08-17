@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+redploy and import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../components/ProfileDropdown';
 import { Link } from 'react-router-dom';
@@ -6,15 +6,7 @@ import socket from '../socket';
 
 const DoctorHome = () => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('doctorNotifications');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Save notifications to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('doctorNotifications', JSON.stringify(notifications));
-  }, [notifications]);
+  const [notifications, setNotifications] = useState([]); // FIX: Remove localStorage logic. Start with an empty array.
 
   useEffect(() => {
     // Request notification permission
@@ -40,11 +32,7 @@ const DoctorHome = () => {
         time: new Date().toLocaleTimeString(),
         read: false
       };
-      // Always read latest from localStorage
-      const saved = localStorage.getItem('doctorNotifications');
-      const current = saved ? JSON.parse(saved) : [];
-      const updated = [newNotification, ...current];
-      setNotifications(updated);
+      setNotifications(prev => [newNotification, ...prev]);
       localStorage.setItem('doctorNotifications', JSON.stringify(updated));
 
       // Show browser notification if permission granted
@@ -68,11 +56,7 @@ const DoctorHome = () => {
         time: new Date().toLocaleTimeString(),
         read: false
       };
-      // Always read latest from localStorage
-      const saved = localStorage.getItem('doctorNotifications');
-      const current = saved ? JSON.parse(saved) : [];
-      const updated = [newNotification, ...current];
-      setNotifications(updated);
+      setNotifications(prev => [newNotification, ...prev]);
       localStorage.setItem('doctorNotifications', JSON.stringify(updated));
 
       // Show browser notification if permission granted
@@ -96,7 +80,7 @@ const DoctorHome = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/login";
+    navigate("/login"); // Use navigate for a smooth transition
   };
 
   return (
@@ -192,4 +176,4 @@ const DoctorHome = () => {
   );
 };
 
-export default DoctorHome;
+export default Header2;

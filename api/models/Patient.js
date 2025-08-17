@@ -1,69 +1,48 @@
+// api/models/Patient.js
+
 import mongoose from 'mongoose';
 
-// Define a separate schema for medical history entries
+// Schema for individual medical history entries
 const medicalHistorySchema = new mongoose.Schema({
   question: { type: String, required: true },
   answer: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
-}, { _id: false }); // Don't generate a separate _id for each entry
+}, { _id: false });
 
 // Main Patient schema
 const patientSchema = new mongoose.Schema({
+  // The _id of the Patient document will be the same as the User document's _id.
+  // This is the link between them.
   _id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  userRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  name: {
-    type: String,
-    trim: true
-  },
-  email: {
-    type: String,
-    lowercase: true
-  },
   photo: { type: String, default: '' },
-
-  password: {
-    type: String,
-    select: false
-  },
-  // javascript
-favorites: [{ 
+  favorites: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Doctor",
-    default: [] 
+    ref: "Doctor"
   }],
- 
-  age: Number,
+  age: { type: Number },
   gender: {
     type: String,
     enum: ['Male', 'Female', 'Other']
   },
-  contactNumber: String,
-  address: String,
-  bloodGroup: String,
-  emergencyContact: String,
-  allergies: String,
-  chronicIllnesses: String,
-  currentMedications: String,
-
-  medicalHistory: { type: [medicalHistorySchema], default: [] },
-
-  createdAt: {
-    type: Date,
-    default: Date.now
+  contactNumber: { type: String },
+  address: { type: String },
+  bloodGroup: { type: String },
+  emergencyContact: { type: String },
+  allergies: { type: String },
+  chronicIllnesses: { type: String },
+  currentMedications: { type: String },
+  medicalHistory: {
+    type: [medicalHistorySchema],
+    default: []
   },
-} , { _id: false }
-);
-
-// We need to explicitly tell Mongoose that the _id is not auto-generated.
-patientSchema.pre('save', function(next) {
-  if (this.isNew) {
-    this._id = this.get('_id');
-  }
-  next();
+}, {
+  // Use the User's _id as the Patient's _id
+  _id: false,
+  timestamps: true // Adds createdAt and updatedAt automatically
 });
 
 export default mongoose.model('Patient', patientSchema);

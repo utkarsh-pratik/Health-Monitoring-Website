@@ -22,72 +22,94 @@ import reminderScheduler from "./reminderScheduler.js"; // Import the reminder s
 
 import jwt from "jsonwebtoken";
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const httpServer = createServer(app);
+
+const allowedOrigins = [
+  'http://localhost:5173', //local React app
+  'https://health-monitoring-website.onrender.com' // deployed frontend URL
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions)); // Use this for Express routes
+
 const io = new Server(httpServer, {
-  cors: {
-    origin: "http://localhost:5173", // Your React app's URL
-    methods: ["GET", "POST"]
-  }
+  cors: corsOptions // And use it for Socket.IO
 });
 
-// Store socket mappings (support multiple sockets per user)
-const doctorSockets = {};
-const patientSockets = {};
+// Store multiple socket IDs per user
+const userSockets = {}; // { userId: [socketId1, socketId2, ...] }
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+  console.log(`⚡: ${socket.id} user just connected!`);
 
-  // Handle doctor registration
-  socket.on('registerDoctor', (doctorId) => {
-    console.log('Doctor registered:', doctorId);
-    if (!doctorSockets[doctorId]) doctorSockets[doctorId] = [];
-    if (!doctorSockets[doctorId].includes(socket.id)) {
-      doctorSockets[doctorId].push(socket.id);
+  const registerUser = (userId) => {
+    if (!userSockets[userId]) {
+      userSockets[userId] = [];
     }
-  });
+    userSockets[userId].push(socket.id);
+    console.log(`[SOCKET] Registered ${userId} with socket ${socket.id}`);
+  };
 
-  socket.on('registerPatient', (patientId) => {
-    if (!patientId) return;
-    patientSockets[patientId] = socket.id; // single latest socket per patient
-  });
+  socket.on('registerDoctor', (doctorId) => registerUser(doctorId));
+  socket.on('registerPatient', (patientId) => registerUser(patientId));
 
   socket.on('disconnect', () => {
-    Object.keys(doctorSockets).forEach((id) => {
-      doctorSockets[id] = doctorSockets[id].filter(sid => sid !== socket.id);
-      if (doctorSockets[id].length === 0) delete doctorSockets[id];
-    });
-    Object.keys(patientSockets).forEach((id) => {
-      if (patientSockets[id] === socket.id) delete patientSockets[id];
-    });
+    console.log(`🔥: ${socket.id} user disconnected`);
+    // Remove the disconnected socket ID
+    for (const userId in userSockets) {
+      userSockets[userId] = userSockets[userId].filter(id => id !== socket.id);
+      if (userSockets[userId].length === 0) {
+        delete userSockets[userId];
+      }
+    }
   });
 });
 
-// Make socket instance available to routes
+// Make the improved socket maps available to routes
 app.set('io', io);
-app.set('doctorSockets', doctorSockets);
-app.set('patientSockets', patientSockets);
+app.set('userSockets', userSockets); // Use a single, unified map
 
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
 // Middleware to authenticate and populate req.user
 
 
-// Public routes (no token needed)
-app.use("/api/appointments" , patientRoutes);
+// Public routes
 app.use("/api/auth", authRoutes);
+
+// Patient-specific routes
 app.use("/api/patient", patientRoutes);
-app.use("/api/payment", paymentRoutes);
-app.use("/api/video-call", videoCallRoutes);
 
-
-// Protected routes (token required)
-// Doctor routes (auth handled inside doctorRoutes.js)
+// Doctor-specific routes
 app.use("/api/doctors", doctorRoutes);
 
-  //app.use("/api/appointments", doctorRoutes);
+// Payment routes
+app.use("/api/payment", paymentRoutes);
+
+// Video call routes
+app.use("/api/video-call", videoCallRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URL, {
@@ -99,6 +121,12 @@ mongoose
    reminderScheduler(); // start the cron reminders after DB is connected...............................................................................
   })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+// The "catchall" handler: for any request that doesn't match one above,
+// send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
 
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, "0.0.0.0", () =>
