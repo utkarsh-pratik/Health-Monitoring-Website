@@ -6,49 +6,27 @@ import User from "../models/User.js";
 export const createDoctorListing = async (req, res) => {
   try {
     const userId = req.user._id;
-    const {
-      name, specialty, description, consultationFees,
-      qualifications, yearsOfExperience, contactNumber,
-      clinicName, clinicAddress, registrationNumber,
-      gender, languages, linkedIn, awards, services
-    } = req.body;
+    const { name, specialty, description, consultationFees } = req.body;
 
-    const languagesArray = Array.isArray(languages)
-      ? languages
-      : (typeof languages === "string"
-          ? languages.split(",").map(l => l.trim()).filter(Boolean)
-          : []);
+    // Server-side validation for required fields
+    if (!name || !specialty || !description || !consultationFees) {
+      return res.status(400).json({ message: "Name, specialty, description, and consultation fees are required." });
+    }
 
-    const doctorData = {
-      name,
-      specialty,
-      description,
-      consultationFees,
-      qualifications,
-      yearsOfExperience,
-      contactNumber,
-      clinicName,
-      clinicAddress,
-      registrationNumber,
-      gender,
-      languages: languagesArray,
-      linkedIn,
-      awards,
-      services,
-      imageUrl: req.file ? (req.file.path || req.file.secure_url || req.file.url || "") : "",
-      userRef: userId,
-    };
+    const existingProfile = await Doctor.findOne({ userRef: userId });
+    if (existingProfile) {
+      return res.status(400).json({ message: "Doctor profile already exists. Please edit instead." });
+    }
 
-    const existing = await Doctor.findOne({ userRef: userId });
-    if (existing) {
-      return res.status(400).json({ message: "Doctor profile already exists. Please edit your profile instead." });
+    const doctorData = { ...req.body, userRef: userId };
+    if (req.file) {
+      doctorData.imageUrl = req.file.path || req.file.secure_url || req.file.url;
     }
 
     const doctor = new Doctor(doctorData);
     await doctor.save();
     res.status(201).json(doctor);
   } catch (error) {
-    console.error("createDoctorListing error:", error);
     if (error.name === "ValidationError") {
       return res.status(400).json({ message: error.message });
     }

@@ -39,6 +39,17 @@ export const signup = async (req, res) => {
 
     await newUser.save();
 
+    // If the user is a patient, create a corresponding Patient document
+    if (newUser.role === "patient") {
+      const newPatient = new Patient({
+        _id: newUser._id, // Use the same ID as the User document
+        userRef: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+      });
+      await newPatient.save();
+    }
+
     // ✅ Generate JWT Token — use _id (not id) for consistency
     const token = jwt.sign(
       { _id: newUser._id, role: newUser.role, contact: newUser.email, name: newUser.name }, 

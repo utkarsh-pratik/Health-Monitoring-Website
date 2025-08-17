@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import moment from 'moment';
 import { FaArrowLeft, FaNotesMedical } from 'react-icons/fa';
 import api from '../api';
