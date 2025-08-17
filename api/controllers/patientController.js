@@ -102,55 +102,33 @@ export const getMyAppointments = async (req, res) => {
   }
 };
 
-
-
-
-
-
 export const postHistory = async (req, res) => {
   const { answers, history } = req.body;
   const patientId = req.user._id;
 
-  console.log("Patient ID:", patientId);
-  console.log("Answers:", answers);
-
   try {
-    // Format answers into array of { question, answer }
-    const formattedHistory = Object.entries(answers).map(([question, answer]) => ({
-      question,
-      answer,
-    }));
-
-    // Try to find existing patient
     let patient = await Patient.findById(patientId);
-
     if (!patient) {
-      // If patient doesn't exist, fetch from User
       const user = await User.findById(patientId);
       if (!user) return res.status(404).json({ error: "User not found" });
+      patient = new Patient({ _id: user._id, userRef: user._id, name: user.name, email: user.email });
+    }
 
-      // Create new Patient entry
-      patient = new Patient({
-        _id: user._id,
-        userRef: user._id,            // ensure consistent lookups
-        name: user.name,
-        email: user.email,
-        contact: user.contact,
-        medicalHistory: [],
-      });
-      console.log("🆕 Created new patient record.");
-    } if (answers && typeof answers === 'object') {
+    if (answers && typeof answers === 'object') {
+      // This is the chatbot path that was missing timestamps
       const formatted = Object.entries(answers).map(([question, answer]) => ({
         question,
         answer,
-        createdAt: new Date(),
+        createdAt: new Date(), // <-- FIX: Add timestamp here
       }));
       patient.medicalHistory = formatted;
     } else if (typeof history === 'string' && history.trim()) {
-      patient.medicalHistory = [
-        ...(patient.medicalHistory || []),
-        { question: "Patient Notes", answer: history.trim(), createdAt: new Date() },
-      ];
+      // This is the manual update path
+      patient.medicalHistory.push({
+        question: "Patient Notes",
+        answer: history.trim(),
+        createdAt: new Date(), // <-- Ensure timestamp here too
+      });
     } else {
       return res.status(400).json({ message: "Provide either answers or history text." });
     }
@@ -160,14 +138,10 @@ export const postHistory = async (req, res) => {
       message: "Medical history saved successfully.",
       history: patient.medicalHistory,
     });
-    
   } catch (error) {
-    console.error("❌ Save error:", error);
     res.status(500).json({ error: "Failed to save medical history." });
   }
 };
-
-
 
 // Add a doctor to the patient's favorites
 // export const addToFavorites = async (req, res) => {
@@ -269,35 +243,28 @@ export const addDoctorToFavorites = async (req, res) => {
     if (!patient) {
       const user = await User.findById(req.user._id);
       if (!user) return res.status(404).json({ message: "User not found" });
-      patient = await Patient.create({
-        _id: user._id, userRef: user._id, name: user.name, email: user.email, favorites: [],
-      });
+      patient = await Patient.create({ _id: user._id, userRef: user._id, name: user.name, email: user.email });
     }
 
-    const already = (patient.favorites || []).some(id => id.toString() === doctorId);
-    if (already) return res.status(400).json({ message: "Doctor is already in favorites" });
+    const alreadyFavorited = patient.favorites.some(id => id.toString() === doctorId);
+    if (alreadyFavorited) return res.status(400).json({ message: "Doctor is already in favorites" });
 
-    const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
-
-    patient.favorites.push(doctor._id);
+    patient.favorites.push(doctorId);
     await patient.save();
-
     res.json({ success: true, message: "Doctor added to favorites" });
   } catch (error) {
-    console.error("Add favorite error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+
 export const getFavorites = async (req, res) => {
   try {
     const patient = await Patient.findById(req.user._id)
-      .populate("favorites", "name specialty imageUrl consultationFees qualifications yearsOfExperience clinicName clinicAddress awards services");
+      .populate("favorites", "name specialty imageUrl consultationFees");
     if (!patient) return res.status(404).json({ message: "Patient not found" });
     res.json({ favorites: patient.favorites || [] });
   } catch (e) {
-    console.error("Get favorites error:", e);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -308,12 +275,10 @@ export const removeDoctorFromFavorites = async (req, res) => {
     const patient = await Patient.findById(req.user._id);
     if (!patient) return res.status(404).json({ message: "Patient not found" });
 
-    patient.favorites = (patient.favorites || []).filter(id => id.toString() !== doctorId);
+    patient.favorites = patient.favorites.filter(id => id.toString() !== doctorId);
     await patient.save();
-
     res.json({ success: true, message: "Doctor removed from favorites" });
   } catch (e) {
-    console.error("Remove favorite error:", e);
     res.status(500).json({ message: "Server error" });
   }
 };

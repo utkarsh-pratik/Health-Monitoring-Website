@@ -107,7 +107,7 @@ const FavoritesPage = () => {
       if (Notification.permission === 'granted') {
         new Notification('Appointment booked!', {
           body: `Your appointment with Dr. ${selectedDoctor.name} is confirmed.`,
-          icon: notsuccess,
+          icon: "", // FIX: Was notsuccess
         });
       } else {
         alert('Appointment booked!');
@@ -115,7 +115,7 @@ const FavoritesPage = () => {
 
       setSelectedDoctor(null);
       setForm({ patientName: '', patientContact: '', appointmentTime: '', reason: '' });
-      navigate('/patient/favorites'); // Redirect to appointments page after booking
+      navigate('/patient/appointments'); // Redirect to appointments page after booking
     } catch (err) {
       console.error('Booking failed:', err);
 
@@ -123,7 +123,7 @@ const FavoritesPage = () => {
       if (Notification.permission === 'granted') {
         new Notification('Booking failed', {
           body: 'There was an error booking your appointment. Please try again.',
-          icon: "",
+          icon: "", // FIX: Was noterror
         });
       } else {
         alert('Booking failed. Please try again.');

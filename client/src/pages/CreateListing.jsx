@@ -101,46 +101,40 @@ const CreateListing = () => {
     setMsg("");
     setError("");
     try {
-      if (
-        !form.name || !form.specialty || !form.description || !form.consultationFees ||
-        (!doctor && !photoFile) // image required when creating
-      ) {
-        setError("Please fill in all required fields. Image is required for first-time profile.");
-        setLoading(false);
-        return;
-      }
-  
       const token = localStorage.getItem("token");
       const data = new FormData();
-      Object.entries(form).forEach(([k, v]) => data.append(k, v ?? ""));
-      if (photoFile) data.append("image", photoFile); // doctor image field name
+      Object.entries(form).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) data.append(k, v);
+      });
+      if (photoFile) data.append("image", photoFile); // Doctor photo field is "image"
   
-      // If doctor profile exists, update; else, create
       let res;
-      try {
+      // Use the 'doctor' state to determine if we should update or create
+      if (doctor && doctor._id) {
+        // Profile exists, so update it
         res = await api.put("/api/doctors/my-profile", data, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMsg("Profile updated successfully!");
-      } catch (err) {
-        // If not found, create new
+      } else {
+        // Profile does not exist, so create it
         res = await api.post("/api/doctors/create-listing", data, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMsg("Profile created successfully!");
       }
-
+  
       setDoctor(res.data);
       setForm({
         ...res.data,
         languages: res.data.languages ? res.data.languages.join(", ") : "",
       });
-      setPhotoPreview(res.data.imageUrl || photoPreview);
+      setPhotoPreview(res.data.imageUrl || defaultAvatar);
       localStorage.setItem('doctorId', res.data._id);
       setEditMode(false);
       setPhotoFile(null);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to save profile.");
+      setError(err.response?.data?.message || "Failed to save profile. Please ensure all required fields are filled.");
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-// src/components/ScheduledAppointment.jsx
+// src/components/ScheduledAppointments.jsx
 import React, { useEffect, useState } from "react";
 import moment from "moment";
 import api from '../api';
@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const ScheduledAppointment = () => {
+const ScheduledAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
   const [loadingIds, setLoadingIds] = useState([]); // track loading for specific appts
@@ -327,4 +327,4 @@ const statusBadge = (status) => {
   }
 };
 
-export default ScheduledAppointment;
+export default ScheduledAppointments;

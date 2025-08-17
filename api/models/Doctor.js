@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
 const appointmentSchema = new mongoose.Schema({
-  patientName: String,
-  patientContact: String,
-  appointmentTime: Date,
-  reason: String,
+  patientName: { type: String, required: true, trim: true },
+  patientContact: { type: String, required: true, trim: true },
+  appointmentTime: { type: Date, required: true },
+  reason: { type: String, trim: true },
   status: { type: String, enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed', 'Rejected', 'No-show'], default: 'Pending' },
   rejectionReason: { type: String, default: '' },
   patientRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -58,10 +58,12 @@ const doctorSchema = new mongoose.Schema({
   },
   imageUrl: {
     type: String,
-    default: "" },
+    default: "",
+  },
   userRef: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    unique: true,
     required: true,
   },
   qualifications: { type: String, trim: true },

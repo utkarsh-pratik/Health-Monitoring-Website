@@ -105,7 +105,7 @@ const UpcomingAppointments = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [token]);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-purple-950 via-black to-violet-950 items-center px-6 pt-16 pb-8 relative transition-all duration-300">

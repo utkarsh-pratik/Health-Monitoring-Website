@@ -133,6 +133,7 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 # Email Service
 SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_EMAIL=your_verified_sendgrid_sender_email
 
 # Payment Gateway
 RAZORPAY_KEY_ID=your_razorpay_key_id

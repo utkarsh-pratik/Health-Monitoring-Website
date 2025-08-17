@@ -60,7 +60,7 @@ const AppRoutes = () => {
       <Route path="/patient" element={<PatientLayout />}>
         <Route path="home" element={<PatientHome />} />
         <Route path="appointments" element={<BookAppointment />} />
-        
+        <Route path="profile" element={<Profile />} /> {/* <-- MOVE THIS LINE HERE */}
         <Route  path="post-history" element={<PatientDashboard />} />
         <Route path="analyze-report" element={<Analyze />} />
         <Route path="favorites" element={<Favorite />} />
@@ -73,9 +73,6 @@ const AppRoutes = () => {
       {/* Auth and other routes without layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/profile" element={<Profile />} />
-  
-      
 
       {/* Fallback: redirect unknown routes to root */}
       <Route path="*" element={<Navigate to="/" replace />} />

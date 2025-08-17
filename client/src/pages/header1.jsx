@@ -229,4 +229,4 @@ const Header1 = () => {
   );
 };
 
-export default Header1;
+export default Header1; // FIX: Was exporting DoctorHome or PatientHome

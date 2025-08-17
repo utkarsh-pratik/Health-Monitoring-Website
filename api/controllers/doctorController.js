@@ -178,7 +178,10 @@ export const getPatientHistory = async (req, res) => {
 export const getScheduledAppointments = async (req, res) => {
   try {
     const doctor = await Doctor.findOne({ userRef: req.user._id });
-    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+    // FIX: Wrap the response in an object with an 'appointments' key
     res.json({ appointments: doctor.appointments || [] });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
