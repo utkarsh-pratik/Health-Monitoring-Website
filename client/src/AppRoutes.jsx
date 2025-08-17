@@ -4,7 +4,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
 import LandingPage from "./pages/LandingPage";
-import DoctorProfile from "./pages/doctorProfile";
 import ProfileSettings from "./components/ProfileSettings";
 import BookAppointment from "./pages/BookAppointment";
 import CreateListing from "./pages/CreateListing";
