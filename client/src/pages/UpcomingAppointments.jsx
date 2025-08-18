@@ -40,7 +40,7 @@ const UpcomingAppointments = () => {
 
   // Format date for display
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = new Date(appt.appointmentTime); // FIX: Use appointmentTime instead of date
     if (isNaN(date.getTime())) return 'Invalid Date';
     return `${date.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -200,13 +200,13 @@ const UpcomingAppointments = () => {
                 <div className="space-y-4 text-lg font-semibold">
                   <div className="flex items-center gap-4">
                     <span className="text-3xl">📅</span>
-                    <span>{formatDate(appt.date)}</span>
+                    <span>{formatDate(appt.appointmentTime)}</span> // FIX: Use appointmentTime instead of date
                   </div>
 
                   <div className="flex items-center gap-4">
                     <span className="text-3xl">⏰</span>
                     <span>
-                      {new Date(appt.date).toLocaleTimeString('en-US', {
+                      {new Date(appt.appointmentTime).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: true,

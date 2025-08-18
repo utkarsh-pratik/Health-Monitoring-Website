@@ -12,7 +12,7 @@ const BookAppointment = () => {
   const [form, setForm] = useState({
     patientName: '',
     patientContact: '',
-    appointmentTime: new Date().toISOString().slice(0, 16), // Default to current date and time
+    appointmentTime: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16), // Default to current date and time
     reason: '',
   });
 

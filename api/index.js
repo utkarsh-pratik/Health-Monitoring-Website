@@ -32,25 +32,27 @@ const app = express();
 const httpServer = createServer(app);
 
 const allowedOrigins = [
-  'http://localhost:5173', //local React app
-  'https://health-monitoring-website.onrender.com' // deployed frontend URL
+  'http://localhost:5173', // Your local React app for development
+  'https://health-monitoring-website.vercel.app' // deployed Vercel frontend URL
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
     }
+    return callback(null, true);
   },
   credentials: true,
 };
 
-app.use(cors(corsOptions)); // Use this for Express routes
+app.use(cors(corsOptions)); // Use this for all Express routes
 
 const io = new Server(httpServer, {
-  cors: corsOptions // And use it for Socket.IO
+  cors: corsOptions // And use the same options for Socket.IO
 });
 
 // Store multiple socket IDs per user
@@ -118,7 +120,7 @@ mongoose
   })
   .then(() => {
     console.log('✅ MongoDB Connected');
-   reminderScheduler(); // start the cron reminders after DB is connected...............................................................................
+   reminderScheduler(); // start the cron reminders after DB is connected............................................................................... 
   })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 

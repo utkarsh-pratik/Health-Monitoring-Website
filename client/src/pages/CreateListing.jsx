@@ -94,49 +94,56 @@ const CreateListing = () => {
 
   const handleEdit = () => setEditMode(true);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("");
-    setError("");
-    try {
-      const token = localStorage.getItem("token");
-      const data = new FormData();
-      Object.entries(form).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) data.append(k, v);
-      });
-      if (photoFile) data.append("image", photoFile); // Doctor photo field is "image"
-  
-      let res;
-      // Use the 'doctor' state to determine if we should update or create
-      if (doctor && doctor._id) {
-        // Profile exists, so update it
-        res = await api.put("/api/doctors/my-profile", data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMsg("Profile updated successfully!");
+const handleSave = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setMsg("");
+  setError("");
+  try {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    
+    // Append all form fields to formData
+    Object.keys(form).forEach(key => {
+      if (key === 'languages' && typeof form[key] === 'string') {
+        formData.append(key, form[key].split(',').map(s => s.trim()));
       } else {
-        // Profile does not exist, so create it
-        res = await api.post("/api/doctors/create-listing", data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMsg("Profile created successfully!");
+        formData.append(key, form[key]);
       }
-  
-      setDoctor(res.data);
-      setForm({
-        ...res.data,
-        languages: res.data.languages ? res.data.languages.join(", ") : "",
-      });
-      setPhotoPreview(res.data.imageUrl || defaultAvatar);
-      setEditMode(false);
-      setPhotoFile(null);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to save profile. Please ensure all required fields are filled.");
-    } finally {
-      setLoading(false);
+    });
+    if (photoFile) {
+      formData.append("image", photoFile);
     }
-  };
+
+    let res;
+    // THIS IS THE FIX: Check if a doctor profile already exists.
+    if (doctor) {
+      // If it exists, UPDATE it.
+      res = await api.put("/api/doctors/my-profile", formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMsg("Profile updated successfully!");
+    } else {
+      // If it does not exist, CREATE it.
+      res = await api.post("/api/doctors/create-listing", formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMsg("Profile created successfully!");
+    }
+
+    setDoctor(res.data);
+    setForm({
+      ...res.data,
+      languages: res.data.languages ? res.data.languages.join(", ") : "",
+    });
+    setEditMode(false);
+
+  } catch (err) {
+    setError(err.response?.data?.message || "Failed to save profile.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading)
     return (
