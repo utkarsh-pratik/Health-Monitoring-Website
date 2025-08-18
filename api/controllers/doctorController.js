@@ -1,6 +1,7 @@
+// api/controllers/doctorController.js
+
 import Doctor from "../models/Doctor.js";
 import Patient from "../models/Patient.js";
-import User from "../models/User.js";
 
 // CREATE doctor profile (listing)
 export const createDoctorListing = async (req, res) => {
@@ -8,39 +9,24 @@ export const createDoctorListing = async (req, res) => {
     const userId = req.user._id;
     const { name, specialty, description, consultationFees } = req.body;
 
-    // 1. Server-side validation for required fields
-    if (!name || !specialty || !description || !consultationFees) {
+    if (!name || !specialty || !description || consultationFees == null) {
       return res.status(400).json({ message: "Name, specialty, description, and consultation fees are required." });
     }
 
-    // 2. Prevent duplicate profile creation
     const existingProfile = await Doctor.findOne({ userRef: userId });
     if (existingProfile) {
       return res.status(400).json({ message: "Doctor profile already exists. Please edit instead." });
     }
 
-    // 3. Construct the doctor data, including the image URL
     const doctorData = { ...req.body, userRef: userId };
-
-    // THIS IS THE CRITICAL FIX:
-    // Correctly get the URL from the uploaded file and add it to the data
     if (req.file) {
-      const imageUrl = req.file.path || req.file.secure_url || req.file.url;
-      if (imageUrl) {
-        doctorData.imageUrl = imageUrl;
-      }
+      doctorData.imageUrl = req.file.path;
     }
 
-    // 4. Create and save the new doctor document
     const doctor = new Doctor(doctorData);
     await doctor.save();
     res.status(201).json(doctor);
-
   } catch (error) {
-    // 5. Handle any validation or server errors gracefully
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ message: error.message });
-    }
     console.error("createDoctorListing error:", error);
     res.status(500).json({ message: "Failed to create doctor profile" });
   }
@@ -49,104 +35,47 @@ export const createDoctorListing = async (req, res) => {
 // GET doctor profile for logged-in doctor
 export const getMyProfile = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
     const doctor = await Doctor.findOne({ userRef: req.user._id }).lean();
     if (!doctor) return res.status(404).json({ message: "Doctor profile not found" });
     res.json(doctor);
   } catch (error) {
-    console.error("getMyProfile error:", error);
-    res.status(500).json({ message: error.message || "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // UPDATE doctor profile for logged-in doctor
 export const updateDoctorProfile = async (req, res) => {
   try {
-    const {
-      name, specialty, description, consultationFees,
-      qualifications, yearsOfExperience, contactNumber,
-      clinicName, clinicAddress, registrationNumber,
-      gender, languages, linkedIn, awards, services
-    } = req.body;
+    const doctor = await Doctor.findOne({ userRef: req.user._id });
+    if (!doctor) return res.status(404).json({ message: "Doctor profile not found" });
 
-    const updates = {
-      name, specialty, description, consultationFees,
-      qualifications, yearsOfExperience, contactNumber,
-      clinicName, clinicAddress, registrationNumber,
-      linkedIn, awards, services,
-    };
+    // Update text fields
+    Object.assign(doctor, req.body);
 
-    const allowedGenders = ["Male","Female","Other"];
-    if (allowedGenders.includes(gender)) updates.gender = gender;
-
-    updates.languages = Array.isArray(languages)
-      ? languages
-      : (typeof languages === "string" ? languages.split(",").map(x => x.trim()).filter(Boolean) : []);
-
+    // Update image if a new one is provided
     if (req.file) {
-      const url = req.file.path || req.file.secure_url || req.file.url;
-      if (url) updates.imageUrl = url;
+      doctor.imageUrl = req.file.path;
     }
 
-    const doctor = await Doctor.findOneAndUpdate(
-      { userRef: req.user._id },
-      updates,
-      { new: true, runValidators: true }
-    );
-    if (!doctor) return res.status(404).json({ message: "Doctor profile not found" });
-    res.json(doctor);
+    const updatedDoctor = await doctor.save();
+    res.json(updatedDoctor);
   } catch (e) {
     console.error("updateDoctorProfile error:", e);
-    if (e.name === "ValidationError") return res.status(400).json({ message: e.message });
     res.status(500).json({ message: "Failed to update doctor profile" });
   }
 };
 
-// (Optional) GET all doctors (for listing/search)
-export const getAllDoctors = async (req, res) => {
-  try {
-    const doctors = await Doctor.find();
-    res.json(doctors);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
+// GET all available doctors with filters
 export const getAvailableDoctors = async (req, res) => {
   try {
-    const { name, specialty, maxFee, day, slotTime } = req.query;
-    const filter = {
-      availability: { $exists: true, $ne: [] } // Only doctors with at least one slot
-    };
-
-    if (name) {
-      filter.name = { $regex: name, $options: "i" };
-    }
-    if (specialty) {
-      filter.specialty = { $regex: specialty, $options: "i" };
-    }
-    if (maxFee) {
-      filter.consultationFees = { $lte: Number(maxFee) };
-    }
-    if (day) {
-      filter['availability.day'] = day;
-    }
-
-    let doctors = await Doctor.find(filter);
-
-    // Further filter by slotTime if provided
-    if (slotTime && day) {
-      doctors = doctors.filter(doc => {
-        const daySlot = doc.availability.find(d => d.day === day);
-        if (!daySlot) return false;
-        return daySlot.slots.some(slot =>
-          slot.start <= slotTime && slot.end > slotTime
-        );
-      });
-    }
-
+    const { name, specialty, maxFee, day } = req.query;
+    const filter = {};
+    if (name) filter.name = { $regex: name, $options: "i" };
+    if (specialty) filter.specialty = { $regex: specialty, $options: "i" };
+    if (maxFee) filter.consultationFees = { $lte: Number(maxFee) };
+    if (day) filter['availability.day'] = day;
+    
+    const doctors = await Doctor.find(filter);
     res.json(doctors);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -167,11 +96,8 @@ export const getPatientHistory = async (req, res) => {
 // Get scheduled appointments for the logged-in doctor
 export const getScheduledAppointments = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ userRef: req.user._id });
-    if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
-    }
-    // FIX: Wrap the response in an object with an 'appointments' key
+    const doctor = await Doctor.findOne({ userRef: req.user._id }).populate('appointments.patientRef', 'name email');
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
     res.json({ appointments: doctor.appointments || [] });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -181,28 +107,27 @@ export const getScheduledAppointments = async (req, res) => {
 // Set availability for the logged-in doctor
 export const setAvailability = async (req, res) => {
   try {
-    const newAvailability = req.body?.availability;
-    if (!Array.isArray(newAvailability) || newAvailability.length === 0) {
+    const newSlotsArray = req.body?.availability;
+    if (!Array.isArray(newSlotsArray) || newSlotsArray.length === 0) {
       return res.status(400).json({ message: "No new availability slots provided" });
     }
 
     const doctor = await Doctor.findOne({ userRef: req.user._id });
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // FIX: Additive logic instead of overwriting
-    newAvailability.forEach(newDaySlot => {
-      const existingDay = doctor.availability.find(d => d.day === newDaySlot.day);
+    // FIX: Correctly process the flat array of slots from the frontend
+    newSlotsArray.forEach(newSlot => {
+      const { day, start, end } = newSlot;
+      if (!day || !start || !end) return; // Skip invalid slots
+      
+      const existingDay = doctor.availability.find(d => d.day === day);
       if (existingDay) {
-        // Add new slots to the existing day, avoiding duplicates
-        newDaySlot.slots.forEach(newSlot => {
-          const slotExists = existingDay.slots.some(s => s.start === newSlot.start && s.end === newSlot.end);
-          if (!slotExists) {
-            existingDay.slots.push(newSlot);
-          }
-        });
+        const slotExists = existingDay.slots.some(s => s.start === start && s.end === end);
+        if (!slotExists) {
+          existingDay.slots.push({ start, end });
+        }
       } else {
-        // Add the new day and its slots
-        doctor.availability.push(newDaySlot);
+        doctor.availability.push({ day, slots: [{ start, end }] });
       }
     });
 
@@ -214,38 +139,34 @@ export const setAvailability = async (req, res) => {
   }
 };
 
+// Update appointment status
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const { apptId } = req.params;
     const { status, reason } = req.body;
 
     const doctor = await Doctor.findOne({ 'appointments._id': apptId });
-    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    if (!doctor) return res.status(404).json({ message: "Appointment not found" });
 
     const appointment = doctor.appointments.id(apptId);
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
     appointment.status = status || appointment.status;
-
-    if (status === 'Cancelled') {
-      appointment.rejectionReason = reason || appointment.rejectionReason || 'Cancelled';
+    if (status === 'Cancelled' || status === 'Rejected') {
+      appointment.rejectionReason = reason || 'Not specified';
     }
-
     if (status === 'Confirmed') {
       appointment.amount = doctor.consultationFees;
       appointment.paymentStatus = 'Pending';
-      appointment.rejectionReason = ''; // clear any previous reason
     }
 
     await doctor.save();
 
     const io = req.app.get("io");
-    // FIX: Use the unified 'userSockets' map
-    const userSockets = req.app.get("userSockets"); 
+    const userSockets = req.app.get("userSockets");
     const patientId = appointment.patientRef?.toString();
 
     if (patientId && userSockets[patientId]) {
-      // FIX: Loop through all sockets for the given patientId
       userSockets[patientId].forEach(socketId => {
         io.to(socketId).emit("appointmentStatus", {
           status: appointment.status,
@@ -254,60 +175,38 @@ export const updateAppointmentStatus = async (req, res) => {
           appointmentTime: appointment.appointmentTime,
           paymentRequired: status === 'Confirmed',
           amount: appointment.amount,
-          _id: appointment._id // Send the appointment ID for client-side matching
+          _id: appointment._id
         });
       });
     }
 
-    // Example in api/controllers/paymentController.js
-    const userSocketsForDoctor = req.app.get('userSockets');
-    const doctorId = doctor.userRef.toString(); // Assuming doctor model has userRef
-    const sockets = userSocketsForDoctor[doctorId] || [];
-    sockets.forEach((sid) => {
-      io.to(sid).emit('paymentReceived', { /* ... payload */ });
-    });
-
     res.json({ message: "Appointment status updated", appointment });
   } catch (error) {
-    console.error('updateAppointmentStatus error:', error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// GET /api/doctors/:doctorId/slots?date=YYYY-MM-DD
+// Get doctor slots for a specific date
 export const getDoctorSlotsForDate = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const { date } = req.query; // e.g., "2024-06-10"
+    const { date } = req.query;
     if (!date) return res.status(400).json({ message: "Date is required" });
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // Get weekday name from date
     const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
-
-    // Find slots for that day
     const daySlot = doctor.availability.find(d => d.day === dayName);
     const slots = daySlot ? daySlot.slots : [];
 
-    // Find booked slots for that date
     const booked = doctor.appointments
-      .filter(appt => {
-        const apptDate = new Date(appt.appointmentTime);
-        return (
-          apptDate.toISOString().slice(0, 10) === date &&
-          appt.status !== 'Cancelled' && appt.status !== 'Rejected'
-        );
-      })
-      .map(appt => {
-        // Extract start time in "HH:MM" (24h) format
-        const apptTime = new Date(appt.appointmentTime);
-        return apptTime.toTimeString().slice(0, 5);
-      });
+      .filter(appt => new Date(appt.appointmentTime).toISOString().slice(0, 10) === date && appt.status !== 'Cancelled' && appt.status !== 'Rejected')
+      .map(appt => new Date(appt.appointmentTime).toTimeString().slice(0, 5));
 
     res.json({ slots, booked });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };
+

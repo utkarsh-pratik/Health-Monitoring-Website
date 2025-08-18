@@ -1,9 +1,7 @@
+// api/controllers/patientController.js
+
 import Patient from '../models/Patient.js';
 import Doctor from '../models/Doctor.js';
-import User from '../models/User.js';
-import { spawn } from 'child_process';
-import path from 'path';
-import fs from 'fs';
 
 // GET patient profile
 export const getPatientProfile = async (req, res) => {
@@ -19,14 +17,21 @@ export const getPatientProfile = async (req, res) => {
 // UPDATE patient profile
 export const updatePatientProfile = async (req, res) => {
   try {
-    const updates = { ...req.body };
-    if (req.file) {
-      updates.photo = req.file.path; // From Cloudinary
-    }
-    const patient = await Patient.findByIdAndUpdate(req.user._id, updates, { new: true });
+    const patient = await Patient.findById(req.user._id);
     if (!patient) return res.status(404).json({ message: 'Patient not found' });
-    res.json(patient);
+
+    // Update text fields
+    Object.assign(patient, req.body);
+
+    // Update image if a new one is provided
+    if (req.file) {
+      patient.photo = req.file.path;
+    }
+
+    const updatedPatient = await patient.save();
+    res.json(updatedPatient);
   } catch (error) {
+    console.error("Update Patient Profile Error:", error);
     res.status(500).json({ message: 'Failed to update profile' });
   }
 };
@@ -37,7 +42,7 @@ export const getFavorites = async (req, res) => {
     const patient = await Patient.findById(req.user._id).populate('favorites');
     if (!patient) return res.status(404).json({ message: 'Patient not found' });
     res.json({ favorites: patient.favorites });
-  } catch (error) {
+  } catch (error)_ {
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -73,7 +78,6 @@ export const postHistory = async (req, res) => {
   try {
     const patient = await Patient.findById(req.user._id);
     if (!patient) return res.status(404).json({ message: 'Patient not found' });
-    // Assuming 'answers' is an object of {question: answer}
     const historyEntries = Object.entries(req.body.answers).map(([question, answer]) => ({ question, answer }));
     patient.medicalHistory.push(...historyEntries);
     await patient.save();
@@ -99,6 +103,7 @@ export const bookAppointment = async (req, res) => {
       appointmentTime,
       reason,
       patientRef: patientId,
+      amount: doctor.consultationFees,
     };
 
     doctor.appointments.push(appointmentData);
@@ -106,9 +111,12 @@ export const bookAppointment = async (req, res) => {
 
     // Notify doctor via Socket.IO
     const io = req.app.get('io');
-    const doctorSockets = req.app.get('doctorSockets');
-    const doctorSocketIds = doctorSockets[doctor.userRef.toString()];
-    if (doctorSocketIds && doctorSocketIds.length > 0) {
+    const userSockets = req.app.get('userSockets');
+    // FIX: Use the doctor's main user ID (userRef) for notifications
+    const doctorUserId = doctor.userRef.toString();
+    const doctorSocketIds = userSockets[doctorUserId] || [];
+
+    if (doctorSocketIds.length > 0) {
       doctorSocketIds.forEach(socketId => {
         io.to(socketId).emit('newAppointment', {
           patientName,
@@ -120,7 +128,8 @@ export const bookAppointment = async (req, res) => {
 
     res.status(201).json({ message: 'Appointment booked successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error("Book Appointment Error:", error);
+    res.status(500).json({ message: 'Server error during booking' });
   }
 };
 
@@ -131,7 +140,7 @@ export const getMyAppointments = async (req, res) => {
     const doctors = await Doctor.find({ 'appointments.patientRef': patientId });
     const myAppointments = doctors.flatMap(doc =>
       doc.appointments
-        .filter(appt => appt.patientRef.toString() === patientId.toString())
+        .filter(appt => appt.patientRef && appt.patientRef.toString() === patientId.toString())
         .map(appt => ({
           ...appt.toObject(),
           doctorName: doc.name,
@@ -147,17 +156,11 @@ export const getMyAppointments = async (req, res) => {
 
 // Analyze report (ML)
 export const analyzeReport = (req, res) => {
-  // FIX: Disable the ML feature temporarily to prevent server crashes.
-  // The Python environment is not available in the Node.js deployment container.
-  // This feature needs to be deployed as a separate Python microservice.
+  // This feature is correctly disabled to prevent server crashes.
+  // The 401 error was likely due to the server crashing before it could respond.
   console.warn("analyzeReport feature is disabled in this deployment.");
   return res.status(503).json({ 
-    error: "The report analysis feature is temporarily unavailable. We are working on it!" 
+    error: "The report analysis feature is temporarily unavailable." 
   });
-
-  /*
-  // Original code that will crash in production:
-  const pythonProcess = spawn('python', ['path/to/your/script.py', ...]);
-  ...
-  */
 };
+
