@@ -9,8 +9,6 @@ import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
-import { authenticate } from "./middlewares/authMiddleware.js";
-import { bookAppointment, getMyAppointments } from "./controllers/patientController.js";
 
 // Import your routes
 import authRoutes from "./routes/authRoutes.js";
@@ -18,9 +16,7 @@ import doctorRoutes from "./routes/doctorRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import videoCallRoutes from "./routes/videoCallRoutes.js";
-import reminderScheduler from "./reminderScheduler.js"; // Import the reminder scheduler
-
-import jwt from "jsonwebtoken";
+import reminderScheduler from "./reminderScheduler.js";
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -32,31 +28,36 @@ const app = express();
 const httpServer = createServer(app);
 
 const allowedOrigins = [
-  'http://localhost:5173', // Your local React app for development
-  'https://health-monitoring-website.vercel.app' // deployed Vercel frontend URL
+  'http://localhost:5173',
+  'https://health-monitoring-website.vercel.app'
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+      callback(new Error(msg), false);
     }
-    return callback(null, true);
   },
   credentials: true,
 };
 
-app.use(cors(corsOptions)); // Use this for all Express routes
+// =================================================================
+// CRITICAL FIX: Middleware must be defined BEFORE routes
+// =================================================================
+app.use(cors(corsOptions)); // 1. Handle CORS
+app.use(express.json());   // 2. Parse JSON bodies
+app.use(cookieParser());   // 3. Parse cookies
+// =================================================================
 
 const io = new Server(httpServer, {
-  cors: corsOptions // And use the same options for Socket.IO
+  cors: corsOptions
 });
 
 // Store multiple socket IDs per user
-const userSockets = {}; // { userId: [socketId1, socketId2, ...] }
+const userSockets = {};
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -75,7 +76,6 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`🔥: ${socket.id} user disconnected`);
-    // Remove the disconnected socket ID
     for (const userId in userSockets) {
       userSockets[userId] = userSockets[userId].filter(id => id !== socket.id);
       if (userSockets[userId].length === 0) {
@@ -85,52 +85,36 @@ io.on('connection', (socket) => {
   });
 });
 
-// Make the improved socket maps available to routes
+// Make the socket maps available to routes
 app.set('io', io);
-app.set('userSockets', userSockets); // Use a single, unified map
+app.set('userSockets', userSockets);
 
-app.use(cors());
-app.use(express.json());
-
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-// Middleware to authenticate and populate req.user
-
-
-// Public routes
+// Define API Routes
 app.use("/api/auth", authRoutes);
-
-// Patient-specific routes
 app.use("/api/patient", patientRoutes);
-
-// Doctor-specific routes
 app.use("/api/doctors", doctorRoutes);
-
-// Payment routes
 app.use("/api/payment", paymentRoutes);
-
-// Video call routes
 app.use("/api/video-call", videoCallRoutes);
 
-mongoose
-  .connect(process.env.MONGODB_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log('✅ MongoDB Connected');
-   reminderScheduler(); // start the cron reminders after DB is connected............................................................................... 
-  })
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+// Serve static files from the React app for production
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
-// The "catchall" handler: for any request that doesn't match one above,
+// The "catchall" handler: for any request that doesn't match an API route,
 // send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, "0.0.0.0", () =>
-  console.log(`✅ Server running on http://localhost:${PORT}`)
-);
+// Connect to MongoDB and start the server
+mongoose
+  .connect(process.env.MONGODB_URL)
+  .then(() => {
+    console.log('✅ MongoDB Connected');
+    reminderScheduler(); // Start the cron reminders
+    const PORT = process.env.PORT || 5000;
+    httpServer.listen(PORT, "0.0.0.0", () =>
+      console.log(`✅ Server running on http://localhost:${PORT}`)
+    );
+  })
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
