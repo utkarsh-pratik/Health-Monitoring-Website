@@ -209,3 +209,4 @@ export const getDoctorSlotsForDate = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
