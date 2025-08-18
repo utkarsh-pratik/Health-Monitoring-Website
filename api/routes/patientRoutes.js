@@ -1,38 +1,45 @@
-// javascript
-import { Router } from "express";
-import { authenticate } from "../middlewares/authMiddleware.js";
-import parser from "../middlewares/multerCloudinary.js";
+// api/routes/patientRoutes.js
+
+import express from 'express';
 import {
   getPatientProfile,
   updatePatientProfile,
-  addDoctorToFavorites,
   getFavorites,
+  addDoctorToFavorites,
   removeDoctorFromFavorites,
   postHistory,
   bookAppointment,
   getMyAppointments,
   analyzeReport,
-} from "../controllers/patientController.js";
+} from '../controllers/patientController.js';
+import { authenticate } from '../middlewares/authMiddleware.js';
+import parser from '../config/cloudinary.js';
+import multer from 'multer';
 
-const router = Router();
+const router = express.Router();
 
-// Profile
-router.get("/profile", authenticate, getPatientProfile);
-router.put("/profile", authenticate, parser.single("photo"), updatePatientProfile);
+// Create a new multer instance that stores files in memory for the ML feature
+const memoryStorage = multer.memoryStorage();
+const uploadInMemory = multer({ storage: memoryStorage });
 
-// Favorites
-router.get("/favorites", authenticate, getFavorites);
-router.post("/favorites/add", authenticate, addDoctorToFavorites);
-router.post("/favorites/remove", authenticate, removeDoctorFromFavorites);
+// Profile routes (uses Cloudinary for photos)
+router.get('/profile', authenticate, getPatientProfile);
+router.put('/profile', authenticate, parser.single('photo'), updatePatientProfile);
 
-// Medical history
-router.post("/post-history", authenticate, postHistory);
+// Favorites routes
+router.get('/favorites', authenticate, getFavorites);
+router.post('/favorites/add', authenticate, addDoctorToFavorites);
+router.post('/favorites/remove', authenticate, removeDoctorFromFavorites);
 
-// Appointments (patient)
-router.get("/getmyappointments", authenticate, getMyAppointments);
-router.post("/book-appointment/:doctorId", authenticate, bookAppointment);
+// Medical history routes
+router.post('/post-history', authenticate, postHistory);
 
-// ML analyze
-router.post("/analyze-report", authenticate, analyzeReport);
+// Appointment routes
+router.post('/book-appointment/:doctorId', authenticate, bookAppointment);
+router.get('/getmyappointments', authenticate, getMyAppointments);
+
+// Analyze report route
+// FIX: Use the new memory-based uploader instead of the Cloudinary parser
+router.post('/analyze-report', authenticate, uploadInMemory.single('report'), analyzeReport);
 
 export default router;

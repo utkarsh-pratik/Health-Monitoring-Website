@@ -218,3 +218,4 @@ export const analyzeReport = async (req, res) => {
     res.status(500).json({ error: "Server error during analysis." });
   }
 };
+
