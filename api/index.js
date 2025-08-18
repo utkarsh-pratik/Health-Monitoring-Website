@@ -9,6 +9,8 @@ import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Import your routes
 import authRoutes from "./routes/authRoutes.js";
@@ -17,9 +19,6 @@ import patientRoutes from "./routes/patientRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import videoCallRoutes from "./routes/videoCallRoutes.js";
 import reminderScheduler from "./reminderScheduler.js";
-
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,40 +51,24 @@ app.use(express.json());   // 2. Parse JSON bodies
 app.use(cookieParser());   // 3. Parse cookies
 // =================================================================
 
-const io = new Server(httpServer, {
-  cors: corsOptions
-});
-
-// Store multiple socket IDs per user
+const io = new Server(httpServer, { cors: corsOptions });
 const userSockets = {};
 
-// Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log(`⚡: ${socket.id} user just connected!`);
-
   const registerUser = (userId) => {
-    if (!userSockets[userId]) {
-      userSockets[userId] = [];
-    }
+    if (!userSockets[userId]) userSockets[userId] = [];
     userSockets[userId].push(socket.id);
-    console.log(`[SOCKET] Registered ${userId} with socket ${socket.id}`);
   };
-
   socket.on('registerDoctor', (doctorId) => registerUser(doctorId));
   socket.on('registerPatient', (patientId) => registerUser(patientId));
-
   socket.on('disconnect', () => {
-    console.log(`🔥: ${socket.id} user disconnected`);
     for (const userId in userSockets) {
       userSockets[userId] = userSockets[userId].filter(id => id !== socket.id);
-      if (userSockets[userId].length === 0) {
-        delete userSockets[userId];
-      }
+      if (userSockets[userId].length === 0) delete userSockets[userId];
     }
   });
 });
 
-// Make the socket maps available to routes
 app.set('io', io);
 app.set('userSockets', userSockets);
 
@@ -98,23 +81,17 @@ app.use("/api/video-call", videoCallRoutes);
 
 // Serve static files from the React app for production
 app.use(express.static(path.join(__dirname, '../client/dist')));
-
-// The "catchall" handler: for any request that doesn't match an API route,
-// send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 // Connect to MongoDB and start the server
-mongoose
-  .connect(process.env.MONGODB_URL)
+mongoose.connect(process.env.MONGODB_URL)
   .then(() => {
     console.log('✅ MongoDB Connected');
-    reminderScheduler(); // Start the cron reminders
+    reminderScheduler();
     const PORT = process.env.PORT || 5000;
-    httpServer.listen(PORT, "0.0.0.0", () =>
-      console.log(`✅ Server running on http://localhost:${PORT}`)
-    );
+    httpServer.listen(PORT, "0.0.0.0", () => console.log(`✅ Server running on port ${PORT}`));
   })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 

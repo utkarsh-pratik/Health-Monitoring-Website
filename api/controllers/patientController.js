@@ -2,6 +2,13 @@
 
 import Patient from '../models/Patient.js';
 import Doctor from '../models/Doctor.js';
+import { spawn } from 'child_process';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // GET patient profile
 export const getPatientProfile = async (req, res) => {
@@ -155,10 +162,59 @@ export const getMyAppointments = async (req, res) => {
 };
 
 // Analyze report (ML)
-export const analyzeReport = (req, res) => {
-  // This feature is correctly disabled to prevent server crashes.
-  console.warn("analyzeReport feature is disabled in this deployment.");
-  return res.status(503).json({ 
-    error: "The report analysis feature is temporarily unavailable." 
-  });
+export const analyzeReport = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No report file uploaded." });
+  }
+
+  // Create a temporary directory if it doesn't exist
+  const tempDir = path.join(__dirname, '../temp_uploads');
+  await fs.mkdir(tempDir, { recursive: true });
+  const tempFilePath = path.join(tempDir, `${Date.now()}-${req.file.originalname}`);
+
+  try {
+    // Write the uploaded file buffer to a temporary file
+    await fs.writeFile(tempFilePath, req.file.buffer);
+
+    const pythonScriptPath = path.join(__dirname, '../ml/model_predictor.py');
+    const pythonProcess = spawn('python3', [pythonScriptPath, tempFilePath]);
+
+    let resultData = '';
+    let errorData = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      resultData += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      errorData += data.toString();
+    });
+
+    pythonProcess.on('close', async (code) => {
+      // Clean up the temporary file immediately
+      await fs.unlink(tempFilePath).catch(err => console.error("Failed to delete temp file:", err));
+
+      if (code !== 0) {
+        console.error(`Python script stderr: ${errorData}`);
+        return res.status(500).json({ error: 'Failed to analyze report.', details: errorData });
+      }
+      try {
+        const result = JSON.parse(resultData);
+        if (result.error) {
+          return res.status(400).json({ error: result.error });
+        }
+        res.json(result);
+      } catch (e) {
+        res.status(500).json({ error: 'Failed to parse analysis result.', details: resultData });
+      }
+    });
+
+  } catch (error) {
+    console.error("Analysis Error:", error);
+    // Ensure temp file is deleted even on early error
+    if (await fs.stat(tempFilePath).catch(() => false)) {
+      await fs.unlink(tempFilePath);
+    }
+    res.status(500).json({ error: "Server error during analysis." });
+  }
 };

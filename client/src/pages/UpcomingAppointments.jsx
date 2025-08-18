@@ -333,7 +333,7 @@ const UpcomingAppointments = () => {
       {/* Payment Modal */}
       {showPayment && selectedAppointment && (
         <PaymentComponent
-          appointmentId={selectedAppointment.appointmentId}
+          appointmentId={selectedAppointment._id} // <-- THIS IS THE FIX
           doctorName={selectedAppointment.doctorName}
           amount={selectedAppointment.amount}
           onSuccess={handlePaymentSuccess}
