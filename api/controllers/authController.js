@@ -1,126 +1,133 @@
-import dotenv from "dotenv";  // ✅ Import dotenv at the top
+// api/controllers/authController.js
+
 import User from "../models/User.js";
+import Patient from "../models/Patient.js";
+import Doctor from "../models/Doctor.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { Contact } from "lucide-react";
 
-dotenv.config(); // ✅ Load environment variables after importing dotenv
-
+// SIGNUP Controller
 export const signup = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // ✅ Validate input fields
+    // 1. Validate input
     if (!name || !email || !password || !role) {
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
-
-    // ✅ Ensure valid role (either "patient" or "doctor")
     if (!["patient", "doctor"].includes(role.toLowerCase())) {
-      return res.status(400).json({ error: "Invalid role. Must be 'patient' or 'doctor'" });
+      return res.status(400).json({ message: "Invalid role. Must be 'patient' or 'doctor'" });
     }
 
-    // ✅ Check if email is already registered
-    const existingUser = await User.findOne({ email });
+    // 2. Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({ error: "Email already in use. Please log in." });
+      return res.status(400).json({ message: "Email already in use. Please log in." });
     }
 
-    // ✅ Hash password before saving
+    // 3. Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // ✅ Create new user
+    // 4. Create new User
     const newUser = new User({
       name: name.trim(),
       email: email.toLowerCase(),
       password: hashedPassword,
       role: role.toLowerCase(),
     });
-
     await newUser.save();
 
-    // If the user is a patient, create a corresponding Patient document
+    // 5. Create corresponding Patient or Doctor profile
     if (newUser.role === "patient") {
-      const newPatient = new Patient({
-        _id: newUser._id, // Use the same ID as the User document
+      const newPatient = new Patient({ _id: newUser._id });
+      await newPatient.save();
+    } else if (newUser.role === "doctor") {
+      // This was the missing logic for doctors
+      const newDoctor = new Doctor({ 
         userRef: newUser._id,
         name: newUser.name,
-        email: newUser.email,
+        // Add default required fields if any, e.g., specialty
+        specialty: 'Not specified',
+        description: 'No description provided.',
+        consultationFees: 0,
       });
-      await newPatient.save();
+      await newDoctor.save();
     }
 
-    // ✅ Generate JWT Token — use _id (not id) for consistency
-    const token = jwt.sign(
-      { _id: newUser._id, role: newUser.role, contact: newUser.email, name: newUser.name }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: "1h" }
-    );
-
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      token,
-      user: {
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-      },
-    });
+    res.status(201).json({ message: "User registered successfully. Please log in." });
 
   } catch (error) {
-    console.error("Signup Error:", error);  // ✅ Debugging - Log error to console
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+    console.error("Signup Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+
+// LOGIN Controller
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: "User not found" });
-
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) return res.status(400).json({ error: "Invalid credentials" });
-
-    // ✅ Use _id in token payload for consistency
-    const token = jwt.sign(
-      { _id: user._id, role: user.role, name: user.name, contact: user.email }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" } // Extended to 7 days for better user experience
-    );
-
-    let doctorId = null;
-    if (user.role.toLowerCase() === "doctor") {
-      // Find the Doctor document for this user
-      const Doctor = (await import("../models/Doctor.js")).default;
-      const doctorDoc = await Doctor.findOne({ userRef: user._id });
-      if (doctorDoc) doctorId = doctorDoc._id;
+    // 1. Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    res.json({
+    // 2. Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // 3. Find the corresponding Doctor or Patient ID
+    let doctorId = null;
+    let patientId = null;
+
+    if (user.role === "doctor") {
+      const doctorProfile = await Doctor.findOne({ userRef: user._id });
+      if (doctorProfile) doctorId = doctorProfile._id;
+    } else if (user.role === "patient") {
+      const patientProfile = await Patient.findById(user._id);
+      if (patientProfile) patientId = patientProfile._id;
+    }
+
+    // 4. Generate JWT Token
+    const token = jwt.sign(
+      { _id: user._id, role: user.role, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 5. Send response with all required data
+    res.status(200).json({
       token,
       user: {
         _id: user._id,
+        name: user.name,
         email: user.email,
-        role: user.role.toLowerCase(), // 👈 this is critical
-        doctorId, // Will be null for non-doctors
-      }
+        role: user.role,
+        doctorId,   // Included for the frontend
+        patientId,  // Included for the frontend
+      },
     });
+
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ error: "Error logging in" });
+    res.status(500).json({ message: "Error logging in" });
   }
 };
 
+
+// GET PROFILE Controller
 export const getProfile = async (req, res) => {
   try {
-    const userId = req.user._id; // Extracted from JWT
-    const user = await User.findById(userId).select("-password"); // Exclude password
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     res.status(200).json(user);
   } catch (error) {
     console.error("Error fetching profile:", error);
