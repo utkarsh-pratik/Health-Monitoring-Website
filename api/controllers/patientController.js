@@ -42,7 +42,7 @@ export const getFavorites = async (req, res) => {
     const patient = await Patient.findById(req.user._id).populate('favorites');
     if (!patient) return res.status(404).json({ message: 'Patient not found' });
     res.json({ favorites: patient.favorites });
-  } catch (error)_ {
+  } catch (error) { // FIX: Removed the underscore typo here
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -112,7 +112,6 @@ export const bookAppointment = async (req, res) => {
     // Notify doctor via Socket.IO
     const io = req.app.get('io');
     const userSockets = req.app.get('userSockets');
-    // FIX: Use the doctor's main user ID (userRef) for notifications
     const doctorUserId = doctor.userRef.toString();
     const doctorSocketIds = userSockets[doctorUserId] || [];
 
@@ -156,8 +155,6 @@ export const getMyAppointments = async (req, res) => {
 
 // Analyze report (ML)
 export const analyzeReport = (req, res) => {
-  // This feature is correctly disabled to prevent server crashes.
-  // The 401 error was likely due to the server crashing before it could respond.
   console.warn("analyzeReport feature is disabled in this deployment.");
   return res.status(503).json({ 
     error: "The report analysis feature is temporarily unavailable." 

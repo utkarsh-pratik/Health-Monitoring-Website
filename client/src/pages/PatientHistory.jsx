@@ -98,13 +98,24 @@ export default function PatientHistory() {
           <div className="text-red-700 bg-red-100 border border-red-300 p-5 rounded-lg shadow-md font-semibold text-center">
             {error}
           </div>
-        ) : history.length === 0 ? (
+        ) : (
           <>
-            {/* If no history exists, show a form to input the history */}
-            <p className="text-center text-gray-600 italic text-lg mt-10">
-              No medical history found. Please provide your medical history below.
-            </p>
+            {history.length > 0 && (
+              <ul className="space-y-8">
+                {history.map((item, index) => (
+                  <li key={index} className="relative bg-white border border-indigo-300 rounded-2xl p-10 shadow-lg">
+                    <div className="absolute top-0 left-0 bg-indigo-700 text-white rounded-full w-14 h-14 flex items-center justify-center font-bold text-xl shadow-lg">
+                      Q{index + 1}
+                    </div>
+                    <p className="text-lg px-2 font-semibold text-indigo-900 mb-4">Q: {item.question}</p>
+                    <p className="text-gray-800 px-2 text-base leading-relaxed whitespace-pre-wrap">A: {item.answer}</p>
+                    <p className="mt-5 text-sm text-indigo-400 italic">{new Date(item.createdAt).toLocaleString()}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
 
+            {/* FIX: Always show the form or the button to open it */}
             {isEditing ? (
               <div className="mt-8">
                 <form onSubmit={handleSaveHistory}>
@@ -112,15 +123,15 @@ export default function PatientHistory() {
                     value={newHistory}
                     onChange={(e) => setNewHistory(e.target.value)}
                     className="w-full h-40 p-4 border rounded-lg text-lg"
-                    placeholder="Enter your medical history..."
+                    placeholder="Enter a new history note..."
                     required
                   />
                   <div className="mt-4 text-center">
-                    <button
-                      type="submit"
-                      className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all duration-300"
-                    >
+                    <button type="submit" className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700">
                       Save History
+                    </button>
+                    <button type="button" onClick={() => setIsEditing(false)} className="ml-4 px-6 py-3 bg-gray-400 text-white rounded-xl font-semibold text-lg hover:bg-gray-500">
+                      Cancel
                     </button>
                   </div>
                 </form>
@@ -128,47 +139,13 @@ export default function PatientHistory() {
             ) : (
               <div className="mt-8 text-center">
                 <button
-                  onClick={() => setIsEditing(true)} // Show form when clicked
-                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all duration-300"
+                  onClick={() => setIsEditing(true)}
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700"
                 >
-                  Add Your Medical History
+                  {history.length > 0 ? 'Add New History Entry' : 'Add Your Medical History'}
                 </button>
               </div>
             )}
-          </>
-        ) : (
-          <>
-            <ul className="space-y-8">
-              {history.map((item, index) => (
-                <li
-                  key={index}
-                  className="relative bg-white border border-indigo-300 rounded-2xl p-10 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-default overflow-visible"
-                >
-                  <div className="absolute top-0  left-0  bg-indigo-700 text-white rounded-full w-14 h-14 flex items-center justify-center font-bold text-xl shadow-lg select-none">
-                    Q{index + 1}
-                  </div>
-                  <p className="text-lg px-2 font-semibold text-indigo-900 mb-4">
-                    Q: {item.question}
-                  </p>
-                  <p className="text-gray-800 px-2 text-base leading-relaxed whitespace-pre-wrap">
-                    A: {item.answer}
-                  </p>
-                  <p className="mt-5 text-sm text-indigo-400 italic tracking-wide">
-                    {moment(item.createdAt).format('MMMM Do YYYY, h:mm A')}
-                  </p>
-                </li>
-              ))}
-            </ul>
-
-            {/* Display the Update Button when there is history */}
-            <div className="mt-8 text-center">
-              <button
-                onClick={() => setIsEditing(true)} // Show form to update history
-                className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all duration-300"
-              >
-                Update History
-              </button>
-            </div>
           </>
         )}
       </div>

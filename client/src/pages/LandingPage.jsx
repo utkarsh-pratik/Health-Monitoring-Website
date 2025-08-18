@@ -164,8 +164,8 @@ const LandingPage = () => {
                             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
                             <ul className="space-y-2 text-blue-100">
                                 <li><Link to="/about" className="hover:text-orange-400 transition-colors">About Us</Link></li>
-                                <li><a href="#" className="hover:text-orange-400 transition-colors">Home</a></li>
-                                <li><a href="#" className="hover:text-orange-400 transition-colors">Services</a></li>
+                                <li><Link to="/" className="hover:text-orange-400 transition-colors">Home</Link></li>
+                                <li><Link to="/" className="hover:text-orange-400 transition-colors">Services</Link></li>
                                 <li><Link to="/patient/appointments" className="hover:text-orange-400 transition-colors">Find a Doctor</Link></li>
                                 <li><a href="#" className="hover:text-orange-400 transition-colors">Health Blog</a></li>
                             </ul>
@@ -219,8 +219,8 @@ const LandingPage = () => {
                                 © 2024 Health Monitoring & Consultations. All rights reserved.
                             </div>
                             <div className="flex space-x-6 mt-4 md:mt-0">
-                                <a href="#" className="text-blue-100 hover:text-orange-400 transition-colors">Privacy Policy</a>
-                                <a href="#" className="text-blue-100 hover:text-orange-400 transition-colors">Terms of Service</a>
+                                <a href="/" className="text-blue-100 hover:text-orange-400 transition-colors">Privacy Policy</a>
+                                <a href="/" className="text-blue-100 hover:text-orange-400 transition-colors">Terms of Service</a>
                                 <a href="#" className="text-blue-100 hover:text-orange-400 transition-colors">Cookie Policy</a>
                             </div>
                         </div>

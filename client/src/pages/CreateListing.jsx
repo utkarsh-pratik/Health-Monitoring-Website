@@ -94,6 +94,8 @@ const CreateListing = () => {
 
   const handleEdit = () => setEditMode(true);
 
+// client/src/pages/CreateListing.jsx
+
 const handleSave = async (e) => {
   e.preventDefault();
   setLoading(true);
@@ -138,7 +140,7 @@ const handleSave = async (e) => {
     });
     setEditMode(false);
 
-  } catch (err) {
+  } catch (err)_ {
     setError(err.response?.data?.message || "Failed to save profile.");
   } finally {
     setLoading(false);
