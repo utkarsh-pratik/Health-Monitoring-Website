@@ -1,4 +1,5 @@
-// src/pages/CreateListing.jsx
+// client/src/pages/CreateListing.jsx
+
 import React, { useState, useEffect, useRef } from "react";
 import api from '../api';
 
@@ -94,58 +95,52 @@ const CreateListing = () => {
 
   const handleEdit = () => setEditMode(true);
 
-// client/src/pages/CreateListing.jsx
-
-const handleSave = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMsg("");
-  setError("");
-  try {
-    const token = localStorage.getItem("token");
-    const formData = new FormData();
-    
-    // Append all form fields to formData
-    Object.keys(form).forEach(key => {
-      if (key === 'languages' && typeof form[key] === 'string') {
-        formData.append(key, form[key].split(',').map(s => s.trim()));
-      } else {
-        formData.append(key, form[key]);
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMsg("");
+    setError("");
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      
+      Object.keys(form).forEach(key => {
+        if (key === 'languages' && typeof form[key] === 'string') {
+          formData.append(key, form[key].split(',').map(s => s.trim()));
+        } else {
+          formData.append(key, form[key]);
+        }
+      });
+      if (photoFile) {
+        formData.append("image", photoFile);
       }
-    });
-    if (photoFile) {
-      formData.append("image", photoFile);
-    }
 
-    let res;
-    // THIS IS THE FIX: Check if a doctor profile already exists.
-    if (doctor) {
-      // If it exists, UPDATE it.
-      res = await api.put("/api/doctors/my-profile", formData, {
-        headers: { Authorization: `Bearer ${token}` },
+      let res;
+      if (doctor) {
+        res = await api.put("/api/doctors/my-profile", formData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMsg("Profile updated successfully!");
+      } else {
+        res = await api.post("/api/doctors/create-listing", formData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMsg("Profile created successfully!");
+      }
+
+      setDoctor(res.data);
+      setForm({
+        ...res.data,
+        languages: res.data.languages ? res.data.languages.join(", ") : "",
       });
-      setMsg("Profile updated successfully!");
-    } else {
-      // If it does not exist, CREATE it.
-      res = await api.post("/api/doctors/create-listing", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setMsg("Profile created successfully!");
+      setEditMode(false);
+
+    } catch (err) { // FIX: Removed the underscore typo here
+      setError(err.response?.data?.message || "Failed to save profile.");
+    } finally {
+      setLoading(false);
     }
-
-    setDoctor(res.data);
-    setForm({
-      ...res.data,
-      languages: res.data.languages ? res.data.languages.join(", ") : "",
-    });
-    setEditMode(false);
-
-  } catch (err)_ {
-    setError(err.response?.data?.message || "Failed to save profile.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (loading)
     return (
@@ -157,7 +152,6 @@ const handleSave = async (e) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-600 px-4 py-16">
       <div className="bg-white/90 rounded-3xl shadow-2xl p-10 max-w-2xl w-full flex flex-col items-center">
-        {/* Profile Photo */}
         <div className="relative mb-6">
           <img
             src={photoPreview || defaultAvatar}
@@ -185,25 +179,6 @@ const handleSave = async (e) => {
           />
         </div>
 
-        <div className="flex flex-col items-start w-full">
-          <label className="text-indigo-700 font-semibold mb-1">Name:</label>
-          {editMode ? (
-            <input
-              type="text"
-              name="name"
-              value={form.name || ""}
-              onChange={handleChange}
-              className="w-full p-2 rounded-lg border border-indigo-300 focus:ring-2 focus:ring-indigo-400"
-              required
-            />
-          ) : (
-            <div className="bg-indigo-50 rounded-lg px-3 py-2 text-gray-700 shadow-inner min-h-[40px] w-full">
-              {doctor && doctor.name ? doctor.name : <span className="text-gray-400">Not set</span>}
-            </div>
-          )}
-        </div>
-
-        {/* Name, Email (non-editable) */}
         <div className="text-center mb-8">
           <h2 className="text-3xl font-extrabold text-indigo-700 mb-2">{user?.name}</h2>
           <p className="text-gray-600 font-medium">{user?.email}</p>
@@ -212,7 +187,6 @@ const handleSave = async (e) => {
           </span>
         </div>
 
-        {/* Profile Details */}
         {editMode ? (
           <form onSubmit={handleSave} className="w-full">
             <div className="grid grid-cols-1 gap-5">
@@ -250,7 +224,6 @@ const handleSave = async (e) => {
                 </div>
               ))}
             </div>
-            {/* Action Buttons */}
             <div className="flex justify-center gap-4 items-center mt-10">
               <button
                 type="submit"
@@ -293,7 +266,6 @@ const handleSave = async (e) => {
                 </div>
               ))}
             </div>
-            {/* Action Buttons */}
             <div className="flex justify-center gap-4 items-center mt-10">
               <button
                 type="button"
