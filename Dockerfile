@@ -14,7 +14,8 @@ COPY api/rf_model.joblib ./api/
 COPY api/ml/ ./api/ml/
 
 # Install Python dependencies
-RUN pip3 install -r requirements.txt
+# FIX: Add the --break-system-packages flag to override the environment protection
+RUN pip3 install -r requirements.txt --break-system-packages
 
 # Copy all Node.js package files
 COPY package.json ./
@@ -37,4 +38,3 @@ EXPOSE 5000
 
 # Command to start the server
 CMD ["npm", "start"]
-
