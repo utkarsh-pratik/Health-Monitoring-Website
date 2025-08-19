@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import ProfileDropdown from '../components/ProfileDropdown';
 import socket from '../socket';
+import { useAuth } from '../context/AuthContext';
 
 const Header2 = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -54,7 +56,7 @@ const Header2 = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout();
     navigate("/login");
   };
 

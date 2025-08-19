@@ -119,8 +119,21 @@ const BookAppointment = () => {
       alert("Please select a slot.");
       return;
     }
-    // Compose appointmentTime as ISO string
-    const appointmentTime = `${selectedDate}T${selectedSlot}:00`;
+
+    // =================================================================
+    // CRITICAL FIX: Convert the user's local time selection to a proper UTC ISO string
+    // =================================================================
+    // 1. Create a string representing the user's local date and time selection.
+    //    Example: "2024-08-20" + "T" + "15:30" + ":00" -> "2024-08-20T15:30:00"
+    const localDateTimeString = `${selectedDate}T${selectedSlot}:00`;
+    
+    // 2. Create a Date object from this string. The browser correctly interprets this as being in the user's local timezone.
+    const localDate = new Date(localDateTimeString);
+    
+    // 3. Convert the local Date object to a full UTC ISO string (e.g., "2024-08-20T10:00:00.000Z").
+    //    This is the universal, unambiguous time that will be sent to the server.
+    const appointmentTimeUTC = localDate.toISOString();
+    // =================================================================
 
     // Request notification permission if not granted
     if (Notification.permission !== 'granted') {
@@ -129,10 +142,10 @@ const BookAppointment = () => {
 
     try {
       const token = localStorage.getItem('token');
-      // FIX: Corrected the API endpoint from '/api/appointments' to '/api/patient'
       await api.post(
         `/api/patient/book-appointment/${selectedDoctor._id}`,
-        { ...form, appointmentTime },
+        // Send the corrected UTC time string to the backend
+        { ...form, appointmentTime: appointmentTimeUTC },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -148,7 +161,8 @@ const BookAppointment = () => {
 
       setSelectedDoctor(null);
       setForm({ patientName: '', patientContact: '', appointmentTime: '', reason: '' });
-      navigate('/patient/appointments'); // Redirect to appointments page after booking
+      // FIX: Navigate to the upcoming appointments page to see the new booking
+      navigate('/patient/appointments/upcoming');
     } catch (err) {
       console.error('Booking failed:', err);
 

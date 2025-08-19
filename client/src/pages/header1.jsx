@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DashboardDropdown from "../components/dashboardDropdown";
 import socket from '../socket';
+import { useAuth } from '../context/AuthContext';
 
 const Header1 = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -9,6 +10,7 @@ const Header1 = () => {
   const [notifications, setNotifications] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -74,7 +76,7 @@ const Header1 = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout(); // This clears state and localStorage
     navigate("/login"); // Use navigate for a smooth transition
   };
 
