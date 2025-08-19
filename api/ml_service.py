@@ -5,13 +5,15 @@ import sys
 import joblib
 import pandas as pd
 from flask import Flask, request, jsonify
-from ml.model_predictor import extract_text, clean_ocr_text, extract_fields
+from werkzeug.utils import secure_filename
+# FIX: Use an absolute import path from the project root
+from api.ml.model_predictor import extract_text, clean_ocr_text, extract_fields
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
 
 # --- Load Models ---
-# Construct absolute paths to model files to ensure they are found in production
+# Construct absolute paths to model files relative to this script
 base_dir = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(base_dir, 'rf_model.joblib')
 LABEL_ENCODER_PATH = os.path.join(base_dir, 'label_encoder.joblib')
@@ -19,7 +21,6 @@ LABEL_ENCODER_PATH = os.path.join(base_dir, 'label_encoder.joblib')
 try:
     model = joblib.load(MODEL_PATH)
     le = joblib.load(LABEL_ENCODER_PATH)
-    # Print to stderr for Render logs
     print("✅ ML Model and Label Encoder loaded successfully.", file=sys.stderr)
 except Exception as e:
     print(f"❌ CRITICAL ERROR: Could not load ML models. {e}", file=sys.stderr)
@@ -30,15 +31,19 @@ except Exception as e:
 @app.route('/analyze', methods=['POST'])
 def analyze_report():
     if model is None or le is None:
-        return jsonify({"error": "ML model is not available due to a server error"}), 503
+        return jsonify({"error": "ML model is not available"}), 503
 
     if 'report' not in request.files:
-        return jsonify({"error": "No report file provided in the request"}), 400
+        return jsonify({"error": "No report file provided"}), 400
 
     file = request.files['report']
+    filename = secure_filename(file.filename)
     
-    # Use a temporary directory for file operations
-    temp_path = os.path.join("/tmp", file.filename)
+    # Use a temporary directory for uploads
+    temp_dir = "/tmp"
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    temp_path = os.path.join(temp_dir, filename)
     file.save(temp_path)
 
     try:
@@ -63,16 +68,16 @@ def analyze_report():
         print(f"Analysis Error: {e}", file=sys.stderr)
         return jsonify({"error": f"An error occurred during analysis: {str(e)}"}), 500
     finally:
-        # Clean up the temporary file to save disk space
+        # Clean up the temporary file
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
-# --- Health Check Endpoint for Render ---
+# --- Health Check Endpoint ---
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == '__main__':
-    # This part is for local testing; Gunicorn will be used in production
+    # Gunicorn will be used in production
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)))
-    
+
