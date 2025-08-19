@@ -13,7 +13,8 @@ import {
   analyzeReport,
 } from '../controllers/patientController.js';
 import { authenticate } from '../middlewares/authMiddleware.js';
-import parser from '../config/cloudinary.js';
+// FIX: Corrected the import path to point to the multer middleware
+import parser from '../middlewares/multerCloudinary.js'; 
 import multer from 'multer';
 
 const router = express.Router();
@@ -38,8 +39,7 @@ router.post('/post-history', authenticate, postHistory);
 router.post('/book-appointment/:doctorId', authenticate, bookAppointment);
 router.get('/getmyappointments', authenticate, getMyAppointments);
 
-// Analyze report route
-// FIX: Use the new memory-based uploader instead of the Cloudinary parser
+// Analyze report route (uses memory storage for analysis)
 router.post('/analyze-report', authenticate, uploadInMemory.single('report'), analyzeReport);
 
 export default router;
