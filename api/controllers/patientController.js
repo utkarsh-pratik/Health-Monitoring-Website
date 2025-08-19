@@ -6,6 +6,8 @@ import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import axios from 'axios';
+import FormData from 'form-data';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -163,59 +165,41 @@ export const getMyAppointments = async (req, res) => {
 
 // Analyze report (ML)
 export const analyzeReport = async (req, res) => {
+  // 1. Check if the ML service URL is configured in Render's environment variables
+  if (!process.env.ML_SERVICE_URL) {
+    console.error("ML_SERVICE_URL environment variable not set.");
+    return res.status(503).json({ error: "Analysis feature is not configured by the server administrator." });
+  }
+
+  // 2. Check if a file was uploaded
   if (!req.file) {
     return res.status(400).json({ error: "No report file uploaded." });
   }
 
-  // Create a temporary directory if it doesn't exist
-  const tempDir = path.join(__dirname, '../temp_uploads');
-  await fs.mkdir(tempDir, { recursive: true });
-  const tempFilePath = path.join(tempDir, `${Date.now()}-${req.file.originalname}`);
-
   try {
-    // Write the uploaded file buffer to a temporary file
-    await fs.writeFile(tempFilePath, req.file.buffer);
-
-    const pythonScriptPath = path.join(__dirname, '../ml/model_predictor.py');
-    const pythonProcess = spawn('python3', [pythonScriptPath, tempFilePath]);
-
-    let resultData = '';
-    let errorData = '';
-
-    pythonProcess.stdout.on('data', (data) => {
-      resultData += data.toString();
+    // 3. Prepare the file to be sent to the Python service
+    const form = new FormData();
+    // The buffer contains the raw file data from the user's upload
+    form.append('report', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
     });
 
-    pythonProcess.stderr.on('data', (data) => {
-      errorData += data.toString();
-    });
+    // 4. Make a request from your Node.js backend to your new Python backend
+    const mlResponse = await axios.post(
+      `${process.env.ML_SERVICE_URL}/analyze`,
+      form,
+      { headers: form.getHeaders() }
+    );
 
-    pythonProcess.on('close', async (code) => {
-      // Clean up the temporary file immediately
-      await fs.unlink(tempFilePath).catch(err => console.error("Failed to delete temp file:", err));
-
-      if (code !== 0) {
-        console.error(`Python script stderr: ${errorData}`);
-        return res.status(500).json({ error: 'Failed to analyze report.', details: errorData });
-      }
-      try {
-        const result = JSON.parse(resultData);
-        if (result.error) {
-          return res.status(400).json({ error: result.error });
-        }
-        res.json(result);
-      } catch (e) {
-        res.status(500).json({ error: 'Failed to parse analysis result.', details: resultData });
-      }
-    });
+    // 5. Send the result from the ML service back to the user's browser
+    res.json(mlResponse.data);
 
   } catch (error) {
-    console.error("Analysis Error:", error);
-    // Ensure temp file is deleted even on early error
-    if (await fs.stat(tempFilePath).catch(() => false)) {
-      await fs.unlink(tempFilePath);
-    }
-    res.status(500).json({ error: "Server error during analysis." });
+    // This will catch errors if the Python service is down or returns an error
+    console.error("Error calling ML service:", error.response ? error.response.data : error.message);
+    const statusCode = error.response ? error.response.status : 500;
+    const message = error.response?.data?.error || "An error occurred during analysis.";
+    res.status(statusCode).json({ error: message });
   }
 };
-
