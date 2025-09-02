@@ -252,7 +252,7 @@ This project is licensed under the ISC License.
 
 ## 👥 Team
 
-- **Developer**: [Your Name]
+- **Developer**: Utkarsh Pratik
 - **Repository**: https://github.com/utkarsh-pratik/Health-Monitoring-website.git
 
 ## 🐛 Bug Reports

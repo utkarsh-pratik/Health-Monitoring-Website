@@ -23,7 +23,7 @@ const handleSignup = async (e) => {
         navigate("/login");
     } catch (error) {
         console.error("Signup Error:", error);
-        setError(error.response?.data?.error || "Signup failed. Try again.");
+        setError(error.response?.data?.message || "Signup failed. Try again.");
     }
 };
 
