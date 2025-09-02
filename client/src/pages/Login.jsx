@@ -24,15 +24,17 @@ const handleLogin = async (e) => {
       localStorage.setItem("userId", user._id);
       localStorage.setItem("name", user.name);
   
-      // FIX: Check the user's role and save role-specific IDs
+      // CORRECTED: Handle patient and doctor redirection logic properly.
       if (user.role === 'doctor' && user.doctorId) {
         localStorage.setItem('doctorId', user.doctorId);
         navigate("/doctor/home");
-      } else if (user.role === 'patient' && user.patientId) {
-        localStorage.setItem('patientId', user.patientId);
+      } else if (user.role === 'patient') {
+        // For patients, the patientId is the same as the user._id.
+        localStorage.setItem('patientId', user._id);
         navigate("/patient/home");
       } else {
-        // Fallback or handle case where IDs are missing
+        // Fallback for incomplete profiles or other roles.
+        setError("Login successful, but profile is incomplete. Please contact support.");
         navigate("/");
       }
   

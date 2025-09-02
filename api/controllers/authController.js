@@ -38,19 +38,12 @@ export const signup = async (req, res) => {
     });
     await newUser.save();
 
-    // 5. Create corresponding Patient or Doctor profile with all required fields
+    // 5. Create corresponding Patient or Doctor profile
     if (newUser.role === "patient") {
-      // For patients, the profile _id must match the user _id.
-      // We also pre-fill the name and email which are required.
-      const newPatient = new Patient({
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-      });
+      // CORRECTED: The Patient model only requires the _id to link to the User.
+      const newPatient = new Patient({ _id: newUser._id });
       await newPatient.save();
     } else if (newUser.role === "doctor") {
-      // For doctors, we create a profile linked by userRef and provide
-      // default values for all required fields.
       const newDoctor = new Doctor({
         userRef: newUser._id,
         name: newUser.name,
