@@ -38,18 +38,25 @@ export const signup = async (req, res) => {
     });
     await newUser.save();
 
-    // 5. Create corresponding Patient or Doctor profile
+    // 5. Create corresponding Patient or Doctor profile with all required fields
     if (newUser.role === "patient") {
-      const newPatient = new Patient({ _id: newUser._id });
+      // For patients, the profile _id must match the user _id.
+      // We also pre-fill the name and email which are required.
+      const newPatient = new Patient({
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+      });
       await newPatient.save();
     } else if (newUser.role === "doctor") {
-      // This was the missing logic for doctors
-      const newDoctor = new Doctor({ 
+      // For doctors, we create a profile linked by userRef and provide
+      // default values for all required fields.
+      const newDoctor = new Doctor({
         userRef: newUser._id,
         name: newUser.name,
-        // Add default required fields if any, e.g., specialty
-        specialty: 'Not specified',
-        description: 'No description provided.',
+        email: newUser.email,
+        specialty: "Not specified",
+        description: "No description provided.",
         consultationFees: 0,
       });
       await newDoctor.save();
@@ -58,6 +65,7 @@ export const signup = async (req, res) => {
     res.status(201).json({ message: "User registered successfully. Please log in." });
 
   } catch (error) {
+    // Log the specific validation error for debugging
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
