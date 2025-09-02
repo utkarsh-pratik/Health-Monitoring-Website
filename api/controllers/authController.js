@@ -55,12 +55,12 @@ export const signup = async (req, res) => {
       await newDoctor.save();
     }
 
-    res.status(201).json({ message: "User registered successfully. Please log in." });
+    return res.status(201).json({ message: "User registered successfully. Please log in." });
 
   } catch (error) {
     // Log the specific validation error for debugging
     console.error("Signup Error:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 

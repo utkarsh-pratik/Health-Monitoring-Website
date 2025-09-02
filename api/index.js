@@ -43,13 +43,10 @@ const corsOptions = {
   credentials: true,
 };
 
-// =================================================================
-// CRITICAL FIX: Middleware must be defined BEFORE routes
-// =================================================================
-app.use(cors(corsOptions)); // 1. Handle CORS
-app.use(express.json());   // 2. Parse JSON bodies
-app.use(cookieParser());   // 3. Parse cookies
-// =================================================================
+// Middleware must be defined BEFORE routes
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
 
 const io = new Server(httpServer, { cors: corsOptions });
 const userSockets = {};
@@ -72,15 +69,18 @@ io.on('connection', (socket) => {
 app.set('io', io);
 app.set('userSockets', userSockets);
 
-// Define API Routes
+// 1. Define API Routes FIRST
 app.use("/api/auth", authRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/video-call", videoCallRoutes);
 
-// Serve static files from the React app for production
+// 2. Serve static files from the React app for production
 app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// 3. The "catchall" handler: for any request that doesn't match one above,
+// send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
@@ -95,4 +95,3 @@ mongoose.connect(process.env.MONGODB_URL)
   })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-  
